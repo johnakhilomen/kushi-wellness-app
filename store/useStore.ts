@@ -32,6 +32,7 @@ interface AppState {
 	user: User | null;
 	isLoading: boolean;
 	authError: string | null;
+	pendingEmail: string | null;
 
 	// Profile
 	profile: UserProfile;
@@ -43,6 +44,8 @@ interface AppState {
 	initialize: () => Promise<void>;
 	login: (email: string, password: string) => Promise<boolean>;
 	register: (name: string, email: string, password: string) => Promise<boolean>;
+	verifyOtp: (email: string, token: string) => Promise<boolean>;
+	resendOtp: (email: string) => Promise<boolean>;
 	logout: () => Promise<void>;
 	resetPassword: (email: string) => Promise<boolean>;
 	setAuthError: (error: string | null) => void;
@@ -87,6 +90,7 @@ export const useStore = create<AppState>((set, get) => ({
 	user: null,
 	isLoading: true,
 	authError: null,
+	pendingEmail: null,
 	profile: defaultProfile,
 	fasting: defaultFasting,
 
@@ -138,7 +142,7 @@ export const useStore = create<AppState>((set, get) => ({
 		return true;
 	},
 
-	// ─── Register ───
+	// ─── Register (OTP-based email verification) ───
 	register: async (name: string, email: string, password: string) => {
 		set({ authError: null, isLoading: true });
 		const { data, error } = await supabase.auth.signUp({
@@ -146,7 +150,38 @@ export const useStore = create<AppState>((set, get) => ({
 			password,
 			options: {
 				data: { full_name: name },
+				emailRedirectTo: undefined,
 			},
+		});
+
+		if (error) {
+			set({ authError: error.message, isLoading: false });
+			return false;
+		}
+
+		// Supabase sends a 6-digit OTP to the email when email confirmation is enabled.
+		// data.session will be null until verification, so we store the pending email.
+		set({
+			pendingEmail: email,
+			isLoading: false,
+		});
+
+		// If Supabase returned a session directly (e.g. email confirmation disabled),
+		// handle it immediately
+		if (data.session) {
+			set({ session: data.session, user: data.user });
+			await get().fetchProfile();
+		}
+		return true;
+	},
+
+	// ─── Verify OTP ───
+	verifyOtp: async (email: string, token: string) => {
+		set({ authError: null, isLoading: true });
+		const { data, error } = await supabase.auth.verifyOtp({
+			email,
+			token,
+			type: 'signup',
 		});
 
 		if (error) {
@@ -157,12 +192,26 @@ export const useStore = create<AppState>((set, get) => ({
 		set({
 			session: data.session,
 			user: data.user,
+			pendingEmail: null,
 			isLoading: false,
 		});
 
-		// Profile is auto-created by DB trigger; fetch it
 		if (data.session) {
 			await get().fetchProfile();
+		}
+		return true;
+	},
+
+	// ─── Resend OTP ───
+	resendOtp: async (email: string) => {
+		set({ authError: null });
+		const { error } = await supabase.auth.resend({
+			email,
+			type: 'signup',
+		});
+		if (error) {
+			set({ authError: error.message });
+			return false;
 		}
 		return true;
 	},

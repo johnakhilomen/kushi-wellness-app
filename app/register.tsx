@@ -47,7 +47,7 @@ export default function RegisterScreen() {
 
 		const success = await register(name, email, password);
 		if (success) {
-			router.push('/onboarding');
+			router.push('/verify-email');
 		}
 	};
 

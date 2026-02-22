@@ -98,10 +98,8 @@ export default function ForgotPasswordScreen() {
 							</View>
 
 							{/* Error */}
-							{(localError || authError) ? (
-								<Text style={styles.errorText}>
-									{localError || authError}
-								</Text>
+							{localError || authError ? (
+								<Text style={styles.errorText}>{localError || authError}</Text>
 							) : null}
 
 							{/* CTA */}
