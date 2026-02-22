@@ -15,7 +15,7 @@ import { colors, typography, spacing, radius } from '../constants/theme';
 import { Button } from '../components/ui/Button';
 import { useStore } from '../store/useStore';
 
-const CODE_LENGTH = 6;
+const CODE_LENGTH = 8;
 
 export default function VerifyEmailScreen() {
 	const router = useRouter();
@@ -120,7 +120,7 @@ export default function VerifyEmailScreen() {
 					{/* Title */}
 					<Text style={styles.title}>Check your email</Text>
 					<Text style={styles.subtitle}>
-						We sent a 6-digit verification code to{'\n'}
+						We sent a verification code to{'\n'}
 						<Text style={styles.emailHighlight}>{pendingEmail}</Text>
 					</Text>
 
@@ -220,18 +220,18 @@ const styles = StyleSheet.create({
 	codeRow: {
 		flexDirection: 'row',
 		justifyContent: 'center',
-		gap: 10,
+		gap: 8,
 		marginBottom: 24,
 	},
 	codeInput: {
-		width: 48,
-		height: 56,
+		width: 38,
+		height: 48,
 		borderRadius: radius.md,
 		borderWidth: 1.5,
 		borderColor: colors.stroke,
 		backgroundColor: '#FFFFFF',
 		textAlign: 'center',
-		fontSize: 24,
+		fontSize: 20,
 		fontFamily: 'Inter',
 		fontWeight: '600',
 		color: colors.text,
