@@ -197,7 +197,6 @@ export const useStore = create<AppState>((set, get) => ({
 			password,
 			options: {
 				data: { full_name: name },
-				emailRedirectTo: undefined,
 			},
 		});
 
