@@ -19,27 +19,48 @@ import {
 } from '../store/useStore';
 import { DIET_OPTIONS, type DietPhilosophy } from '../constants/diets';
 
-const intentionOptions: { key: PrimaryIntention; label: string }[] = [
-	{ key: 'digestion', label: 'Improve digestion' },
-	{ key: 'weight', label: 'Manage weight naturally' },
-	{ key: 'energy', label: 'Boost daily energy' },
+const intentionOptions: {
+	key: PrimaryIntention;
+	label: string;
+	icon: string;
+}[] = [
+	{ key: 'digestion', label: 'Improve digestion', icon: '🫁' },
+	{ key: 'weight', label: 'Manage weight naturally', icon: '⚖️' },
+	{ key: 'energy', label: 'Boost daily energy', icon: '⚡' },
 ];
 
-const fastingOptions: { key: FastingStyle; label: string }[] = [
-	{ key: '14:10', label: '14:10' },
-	{ key: '16:8', label: '16:8' },
-	{ key: '12:12', label: '12:12' },
+const fastingOptions: { key: FastingStyle; label: string; desc: string }[] = [
+	{ key: '14:10', label: '14:10', desc: '14h fast · 10h eating' },
+	{ key: '16:8', label: '16:8', desc: '16h fast · 8h eating' },
+	{ key: '12:12', label: '12:12', desc: '12h fast · 12h eating' },
 ];
+
+const TOTAL_STEPS = 3;
 
 export default function OnboardingScreen() {
 	const router = useRouter();
 	const completeOnboarding = useStore((s) => s.completeOnboarding);
+	const [step, setStep] = useState(1);
 	const [intention, setIntention] = useState<PrimaryIntention>('energy');
 	const [fastingStyle, setFastingStyle] = useState<FastingStyle>('14:10');
 	const [diet, setDiet] = useState<DietPhilosophy>('macrobiotic');
 	const [loading, setLoading] = useState(false);
 
-	const handleContinue = async () => {
+	const progressPercent = `${Math.round((step / TOTAL_STEPS) * 100)}%` as const;
+
+	const handleNext = () => {
+		if (step < TOTAL_STEPS) {
+			setStep(step + 1);
+		}
+	};
+
+	const handleBack = () => {
+		if (step > 1) {
+			setStep(step - 1);
+		}
+	};
+
+	const handleFinish = async () => {
 		setLoading(true);
 		await completeOnboarding(intention, fastingStyle, diet);
 		setLoading(false);
@@ -53,7 +74,120 @@ export default function OnboardingScreen() {
 		router.replace('/(tabs)');
 	};
 
-	const progressPercent = '33%';
+	// ── Step 1: Diet Philosophy ──
+	const renderStep1 = () => (
+		<View style={styles.questionSection}>
+			<Text style={styles.questionTitle}>Choose your diet philosophy</Text>
+			<Text style={styles.questionSubtitle}>
+				This shapes your meals, rituals, and AI guidance.
+			</Text>
+			<View style={styles.dietGrid}>
+				{DIET_OPTIONS.map((d) => {
+					const selected = diet === d.key;
+					return (
+						<Pressable
+							key={d.key}
+							style={[styles.dietCard, selected && styles.dietCardSelected]}
+							onPress={() => setDiet(d.key)}
+						>
+							<View style={styles.dietCardHeader}>
+								<Text style={styles.dietIcon}>{d.icon}</Text>
+								{selected && <Text style={styles.dietCheck}>✓</Text>}
+							</View>
+							<Text
+								style={[styles.dietLabel, selected && styles.dietLabelSelected]}
+							>
+								{d.label}
+							</Text>
+							<Text style={styles.dietTagline}>{d.tagline}</Text>
+							<View style={styles.dietTooltipRow}>
+								<Tooltip
+									term="Learn more"
+									explanation={d.tooltip}
+								/>
+							</View>
+						</Pressable>
+					);
+				})}
+			</View>
+		</View>
+	);
+
+	// ── Step 2: Primary Intention ──
+	const renderStep2 = () => (
+		<View style={styles.questionSection}>
+			<Text style={styles.questionTitle}>What is your primary intention?</Text>
+			<Text style={styles.questionSubtitle}>
+				We'll tailor your daily rituals and meal guidance around this goal.
+			</Text>
+			<View style={styles.intentionList}>
+				{intentionOptions.map((opt) => {
+					const selected = intention === opt.key;
+					return (
+						<Pressable
+							key={opt.key}
+							style={[
+								styles.intentionCard,
+								selected && styles.intentionCardSelected,
+							]}
+							onPress={() => setIntention(opt.key)}
+						>
+							<Text style={styles.intentionIcon}>{opt.icon}</Text>
+							<Text
+								style={[
+									styles.intentionLabel,
+									selected && styles.intentionLabelSelected,
+								]}
+							>
+								{opt.label}
+							</Text>
+							{selected && <Text style={styles.intentionCheck}>✓</Text>}
+						</Pressable>
+					);
+				})}
+			</View>
+		</View>
+	);
+
+	// ── Step 3: Fasting Style ──
+	const renderStep3 = () => (
+		<View style={styles.questionSection}>
+			<Text style={styles.questionTitle}>Preferred fasting style</Text>
+			<Text style={styles.questionSubtitle}>
+				Choose a rhythm that matches your lifestyle. You can change it later.
+			</Text>
+			<View style={styles.fastingList}>
+				{fastingOptions.map((opt) => {
+					const selected = fastingStyle === opt.key;
+					return (
+						<Pressable
+							key={opt.key}
+							style={[
+								styles.fastingCard,
+								selected && styles.fastingCardSelected,
+							]}
+							onPress={() => setFastingStyle(opt.key)}
+						>
+							<View>
+								<Text
+									style={[
+										styles.fastingLabel,
+										selected && styles.fastingLabelSelected,
+									]}
+								>
+									{opt.label}
+								</Text>
+								<Text style={styles.fastingDesc}>{opt.desc}</Text>
+							</View>
+							{selected && <Text style={styles.fastingCheck}>✓</Text>}
+						</Pressable>
+					);
+				})}
+			</View>
+		</View>
+	);
+
+	const isLastStep = step === TOTAL_STEPS;
 
 	return (
 		<SafeAreaView style={styles.container}>
@@ -67,101 +201,53 @@ export default function OnboardingScreen() {
 				{/* Progress */}
 				<View style={styles.progressContainer}>
 					<View style={styles.progressBar}>
-						<View style={[styles.progressFill, { width: progressPercent }]} />
+						<View
+							style={[
+								styles.progressFill,
+								{ width: progressPercent as `${number}%` },
+							]}
+						/>
 					</View>
-					<Text style={styles.progressText}>Step 1 of 3</Text>
-				</View>
-
-				{/* Question 1 — Diet Philosophy */}
-				<View style={styles.questionSection}>
-					<Text style={styles.questionTitle}>Choose your diet philosophy</Text>
-					<Text style={styles.questionSubtitle}>
-						This shapes your meals, rituals, and AI guidance.
+					<Text style={styles.progressText}>
+						Step {step} of {TOTAL_STEPS}
 					</Text>
-					<View style={styles.dietGrid}>
-						{DIET_OPTIONS.map((d) => {
-							const selected = diet === d.key;
-							return (
-								<Pressable
-									key={d.key}
-									style={[styles.dietCard, selected && styles.dietCardSelected]}
-									onPress={() => setDiet(d.key)}
-								>
-									<View style={styles.dietCardHeader}>
-										<Text style={styles.dietIcon}>{d.icon}</Text>
-										{selected && <Text style={styles.dietCheck}>✓</Text>}
-									</View>
-									<Text
-										style={[
-											styles.dietLabel,
-											selected && styles.dietLabelSelected,
-										]}
-									>
-										{d.label}
-									</Text>
-									<Text style={styles.dietTagline}>{d.tagline}</Text>
-									<View style={styles.dietTooltipRow}>
-										<Tooltip
-											term="Learn more"
-											explanation={d.tooltip}
-										/>
-									</View>
-								</Pressable>
-							);
-						})}
-					</View>
 				</View>
 
-				{/* Question 2 — Primary Intention */}
-				<View style={styles.questionSection}>
-					<Text style={styles.questionTitle}>
-						What is your primary intention?
-					</Text>
-					<View style={styles.optionsList}>
-						{intentionOptions.map((opt) => (
-							<View
-								key={opt.key}
-								style={styles.optionRow}
-							>
-								<Chip
-									label={opt.label}
-									selected={intention === opt.key}
-									onPress={() => setIntention(opt.key)}
-									style={{ flex: 1 }}
-								/>
-							</View>
-						))}
-					</View>
-				</View>
-
-				{/* Question 3 — Fasting Style */}
-				<View style={styles.questionSection}>
-					<Text style={styles.questionTitle}>Preferred fasting style</Text>
-					<View style={styles.chipRow}>
-						{fastingOptions.map((opt) => (
-							<Chip
-								key={opt.key}
-								label={opt.label}
-								selected={fastingStyle === opt.key}
-								onPress={() => setFastingStyle(opt.key)}
-							/>
-						))}
-					</View>
-				</View>
+				{/* Step Content */}
+				{step === 1 && renderStep1()}
+				{step === 2 && renderStep2()}
+				{step === 3 && renderStep3()}
 
 				{/* CTAs */}
 				<View style={styles.ctas}>
-					<Button
-						title={loading ? 'Saving...' : 'Continue to Home'}
-						onPress={handleContinue}
-						disabled={loading}
-					/>
-					<Button
-						title="Skip for now"
-						variant="ghost"
-						onPress={handleSkip}
-						disabled={loading}
-					/>
+					{isLastStep ? (
+						<Button
+							title={loading ? 'Saving...' : 'Get Started'}
+							onPress={handleFinish}
+							disabled={loading}
+						/>
+					) : (
+						<Button
+							title="Next"
+							onPress={handleNext}
+						/>
+					)}
+
+					<View style={styles.secondaryRow}>
+						{step > 1 && (
+							<Button
+								title="Back"
+								variant="secondary"
+								onPress={handleBack}
+							/>
+						)}
+						<Button
+							title="Skip for now"
+							variant="ghost"
+							onPress={handleSkip}
+							disabled={loading}
+						/>
+					</View>
 				</View>
 			</ScrollView>
 		</SafeAreaView>
@@ -202,7 +288,7 @@ const styles = StyleSheet.create({
 		color: colors.muted,
 	},
 	questionSection: {
-		marginBottom: 28,
+		marginBottom: 12,
 	},
 	questionTitle: {
 		...typography.questionTitle,
@@ -214,16 +300,8 @@ const styles = StyleSheet.create({
 		color: colors.muted,
 		marginBottom: 14,
 	},
-	optionsList: {
-		gap: 10,
-	},
-	optionRow: {
-		flexDirection: 'row',
-	},
-	chipRow: {
-		flexDirection: 'row',
-		gap: 10,
-	},
+
+	// ── Diet Grid (Step 1) ──
 	dietGrid: {
 		flexDirection: 'row',
 		flexWrap: 'wrap',
@@ -271,8 +349,86 @@ const styles = StyleSheet.create({
 	dietTooltipRow: {
 		marginTop: 2,
 	},
+
+	// ── Intention List (Step 2) ──
+	intentionList: {
+		gap: 10,
+	},
+	intentionCard: {
+		flexDirection: 'row',
+		alignItems: 'center',
+		backgroundColor: colors.surface,
+		borderRadius: radius.lg,
+		padding: 18,
+		borderWidth: 2,
+		borderColor: colors.stroke,
+	},
+	intentionCardSelected: {
+		borderColor: colors.navy,
+		backgroundColor: '#F0F4FA',
+	},
+	intentionIcon: {
+		fontSize: 22,
+		marginRight: 14,
+	},
+	intentionLabel: {
+		...typography.body,
+		color: colors.text,
+		flex: 1,
+	},
+	intentionLabelSelected: {
+		color: colors.navy,
+		fontWeight: '600',
+	},
+	intentionCheck: {
+		fontSize: 16,
+		fontWeight: '700',
+		color: colors.navy,
+	},
+
+	// ── Fasting List (Step 3) ──
+	fastingList: {
+		gap: 10,
+	},
+	fastingCard: {
+		flexDirection: 'row',
+		alignItems: 'center',
+		justifyContent: 'space-between',
+		backgroundColor: colors.surface,
+		borderRadius: radius.lg,
+		padding: 18,
+		borderWidth: 2,
+		borderColor: colors.stroke,
+	},
+	fastingCardSelected: {
+		borderColor: colors.navy,
+		backgroundColor: '#F0F4FA',
+	},
+	fastingLabel: {
+		...typography.section,
+		color: colors.text,
+		marginBottom: 2,
+	},
+	fastingLabelSelected: {
+		color: colors.navy,
+	},
+	fastingDesc: {
+		...typography.meta,
+		color: colors.muted,
+	},
+	fastingCheck: {
+		fontSize: 16,
+		fontWeight: '700',
+		color: colors.navy,
+	},
+
+	// ── CTA ──
 	ctas: {
 		gap: 10,
 		marginTop: 20,
+	},
+	secondaryRow: {
+		flexDirection: 'row',
+		gap: 10,
 	},
 });

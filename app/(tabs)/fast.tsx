@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
 	View,
 	Text,
@@ -6,6 +6,8 @@ import {
 	SafeAreaView,
 	ScrollView,
 	ActivityIndicator,
+	Modal,
+	Pressable,
 } from 'react-native';
 import { colors, typography, spacing, radius } from '../../constants/theme';
 import { Button } from '../../components/ui/Button';
@@ -14,6 +16,23 @@ import { FastingRing } from '../../components/FastingRing';
 import { Tooltip } from '../../components/ui/Tooltip';
 import { useStore } from '../../store/useStore';
 
+const WINDOW_PRESETS: {
+	label: string;
+	start: string;
+	end: string;
+	fast: string;
+}[] = [
+	{ label: '12:12', start: '8:00 AM', end: '8:00 PM', fast: '8 PM – 8 AM' },
+	{ label: '14:10', start: '10:00 AM', end: '8:00 PM', fast: '8 PM – 10 AM' },
+	{
+		label: '16:8',
+		start: '11:30 AM',
+		end: '7:30 PM',
+		fast: '7:30 PM – 11:30 AM',
+	},
+	{ label: '18:6', start: '12:00 PM', end: '6:00 PM', fast: '6 PM – 12 PM' },
+];
+
 export default function FastScreen() {
 	const fasting = useStore((s) => s.fasting);
 	const profile = useStore((s) => s.profile);
@@ -21,6 +40,10 @@ export default function FastScreen() {
 	const endFast = useStore((s) => s.endFast);
 	const startFast = useStore((s) => s.startFast);
 	const clearPostFastInsight = useStore((s) => s.clearPostFastInsight);
+	const adjustWindow = useStore((s) => s.adjustWindow);
+
+	const [showWindowModal, setShowWindowModal] = useState(false);
+	const [adjusting, setAdjusting] = useState(false);
 
 	// Compute time display
 	const getTimerDisplay = () => {
@@ -88,7 +111,7 @@ export default function FastScreen() {
 					<Button
 						title="Adjust Window"
 						variant="secondary"
-						onPress={() => {}}
+						onPress={() => setShowWindowModal(true)}
 					/>
 				</View>
 
@@ -134,6 +157,76 @@ export default function FastScreen() {
 				{/* Bottom spacer for tab bar */}
 				<View style={{ height: 100 }} />
 			</ScrollView>
+
+			{/* Adjust Window Modal */}
+			<Modal
+				visible={showWindowModal}
+				transparent
+				animationType="slide"
+				onRequestClose={() => setShowWindowModal(false)}
+			>
+				<Pressable
+					style={styles.modalOverlay}
+					onPress={() => setShowWindowModal(false)}
+				>
+					<Pressable
+						style={styles.modalSheet}
+						onPress={() => {}}
+					>
+						<Text style={styles.modalTitle}>Adjust Eating Window</Text>
+						<Text style={styles.modalSubtitle}>
+							Choose a fasting schedule that works for you
+						</Text>
+
+						{WINDOW_PRESETS.map((preset) => {
+							const isActive =
+								preset.start === profile.eatingWindowStart &&
+								preset.end === profile.eatingWindowEnd;
+							return (
+								<Pressable
+									key={preset.label}
+									style={[styles.presetRow, isActive && styles.presetRowActive]}
+									onPress={async () => {
+										setAdjusting(true);
+										await adjustWindow(preset.start, preset.end);
+										setAdjusting(false);
+										setShowWindowModal(false);
+									}}
+									disabled={adjusting}
+								>
+									<View style={styles.presetLeft}>
+										<Text
+											style={[
+												styles.presetLabel,
+												isActive && styles.presetLabelActive,
+											]}
+										>
+											{preset.label}
+										</Text>
+										<Text style={styles.presetDetail}>
+											Eat {preset.start} – {preset.end}
+										</Text>
+									</View>
+									{isActive && <Text style={styles.presetCheck}>✓</Text>}
+								</Pressable>
+							);
+						})}
+
+						{adjusting && (
+							<ActivityIndicator
+								style={{ marginTop: 12 }}
+								color={colors.navy}
+							/>
+						)}
+
+						<Button
+							title="Cancel"
+							variant="ghost"
+							onPress={() => setShowWindowModal(false)}
+						/>
+					</Pressable>
+				</Pressable>
+			</Modal>
 		</SafeAreaView>
 	);
 }
@@ -211,5 +304,61 @@ const styles = StyleSheet.create({
 		...typography.body,
 		color: colors.lightBlue,
 		lineHeight: 22,
+	},
+	modalOverlay: {
+		flex: 1,
+		backgroundColor: 'rgba(0,0,0,0.4)',
+		justifyContent: 'flex-end',
+	},
+	modalSheet: {
+		backgroundColor: colors.surface,
+		borderTopLeftRadius: 24,
+		borderTopRightRadius: 24,
+		padding: 24,
+		paddingBottom: 40,
+	},
+	modalTitle: {
+		...typography.section,
+		color: colors.text,
+		marginBottom: 4,
+	},
+	modalSubtitle: {
+		...typography.meta,
+		color: colors.muted,
+		marginBottom: 20,
+	},
+	presetRow: {
+		flexDirection: 'row',
+		alignItems: 'center',
+		justifyContent: 'space-between',
+		padding: 16,
+		borderRadius: radius.md,
+		borderWidth: 1,
+		borderColor: colors.stroke,
+		marginBottom: 10,
+	},
+	presetRowActive: {
+		borderColor: colors.navy,
+		backgroundColor: '#F0EDE8',
+	},
+	presetLeft: {
+		gap: 2,
+	},
+	presetLabel: {
+		...typography.body,
+		fontWeight: '600' as const,
+		color: colors.text,
+	},
+	presetLabelActive: {
+		color: colors.navy,
+	},
+	presetDetail: {
+		...typography.metaSmall,
+		color: colors.muted,
+	},
+	presetCheck: {
+		fontSize: 18,
+		color: colors.navy,
+		fontWeight: '700' as const,
 	},
 });
