@@ -121,6 +121,7 @@ export default function RegisterScreen() {
 					<Button
 						title={isLoading ? 'Creating Account...' : 'Create Account'}
 						onPress={handleRegister}
+						disabled={isLoading}
 					/>
 
 					{/* Footer */}

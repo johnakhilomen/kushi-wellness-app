@@ -101,6 +101,7 @@ export default function LoginScreen() {
 					<Button
 						title={isLoading ? 'Logging in...' : 'Log in'}
 						onPress={handleLogin}
+						disabled={isLoading}
 					/>
 
 					{/* Divider */}
