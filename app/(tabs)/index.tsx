@@ -1,5 +1,12 @@
-import React from 'react';
-import { View, Text, StyleSheet, SafeAreaView, ScrollView } from 'react-native';
+import React, { useEffect } from 'react';
+import {
+	View,
+	Text,
+	StyleSheet,
+	SafeAreaView,
+	ScrollView,
+	ActivityIndicator,
+} from 'react-native';
 import { colors, typography, spacing, radius } from '../../constants/theme';
 import { Card } from '../../components/ui/Card';
 import { StreakBadge } from '../../components/ui/StreakBadge';
@@ -18,9 +25,25 @@ function getDayOfWeek() {
 	return days[new Date().getDay()];
 }
 
+const mealTypeColors: Record<string, string> = {
+	entry: colors.navy,
+	core: colors.green,
+	snack: '#B8860B',
+	closing: colors.muted,
+};
+
 export default function HomeScreen() {
 	const profile = useStore((s) => s.profile);
 	const fasting = useStore((s) => s.fasting);
+	const ai = useStore((s) => s.ai);
+	const fetchMealPlan = useStore((s) => s.fetchMealPlan);
+
+	// Fetch meal plan on mount
+	useEffect(() => {
+		if (profile.hasCompletedOnboarding) {
+			fetchMealPlan();
+		}
+	}, [profile.hasCompletedOnboarding]);
 
 	// Compute fasting time display
 	const getTimerDisplay = () => {
@@ -80,20 +103,62 @@ export default function HomeScreen() {
 					style={styles.card}
 				>
 					<Text style={styles.sectionTitle}>Dynamic Diet Schedule</Text>
-					<View style={styles.mealItem}>
-						<View style={styles.mealDot} />
-						<View style={styles.mealInfo}>
-							<Text style={styles.mealName}>Miso soup with wakame</Text>
-							<Text style={styles.mealTime}>11:30 AM — Light entry meal</Text>
+					{ai.mealsLoading ? (
+						<View style={styles.loadingContainer}>
+							<ActivityIndicator
+								size="small"
+								color={colors.navy}
+							/>
+							<Text style={styles.loadingText}>Generating your meal plan…</Text>
 						</View>
-					</View>
-					<View style={styles.mealItem}>
-						<View style={[styles.mealDot, { backgroundColor: colors.green }]} />
-						<View style={styles.mealInfo}>
-							<Text style={styles.mealName}>Steamed greens & brown rice</Text>
-							<Text style={styles.mealTime}>1:00 PM — Core nourishment</Text>
-						</View>
-					</View>
+					) : ai.meals.length > 0 ? (
+						ai.meals.map((meal, i) => (
+							<View
+								key={i}
+								style={styles.mealItem}
+							>
+								<View
+									style={[
+										styles.mealDot,
+										{
+											backgroundColor: mealTypeColors[meal.type] ?? colors.navy,
+										},
+									]}
+								/>
+								<View style={styles.mealInfo}>
+									<Text style={styles.mealName}>{meal.name}</Text>
+									<Text style={styles.mealTime}>
+										{meal.time} — {meal.description}
+									</Text>
+								</View>
+							</View>
+						))
+					) : (
+						<>
+							<View style={styles.mealItem}>
+								<View style={styles.mealDot} />
+								<View style={styles.mealInfo}>
+									<Text style={styles.mealName}>Miso soup with wakame</Text>
+									<Text style={styles.mealTime}>
+										11:30 AM — Light entry meal
+									</Text>
+								</View>
+							</View>
+							<View style={styles.mealItem}>
+								<View
+									style={[styles.mealDot, { backgroundColor: colors.green }]}
+								/>
+								<View style={styles.mealInfo}>
+									<Text style={styles.mealName}>
+										Steamed greens & brown rice
+									</Text>
+									<Text style={styles.mealTime}>
+										1:00 PM — Core nourishment
+									</Text>
+								</View>
+							</View>
+						</>
+					)}
 				</Card>
 
 				{/* Meditation Card */}
@@ -215,6 +280,15 @@ const styles = StyleSheet.create({
 		marginBottom: 2,
 	},
 	mealTime: {
+		...typography.meta,
+		color: colors.muted,
+	},
+	loadingContainer: {
+		alignItems: 'center',
+		paddingVertical: 20,
+		gap: 8,
+	},
+	loadingText: {
 		...typography.meta,
 		color: colors.muted,
 	},

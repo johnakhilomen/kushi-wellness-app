@@ -1,5 +1,12 @@
 import React from 'react';
-import { View, Text, StyleSheet, SafeAreaView, ScrollView } from 'react-native';
+import {
+	View,
+	Text,
+	StyleSheet,
+	SafeAreaView,
+	ScrollView,
+	ActivityIndicator,
+} from 'react-native';
 import { colors, typography, spacing, radius } from '../../constants/theme';
 import { Button } from '../../components/ui/Button';
 import { Card } from '../../components/ui/Card';
@@ -9,8 +16,10 @@ import { useStore } from '../../store/useStore';
 export default function FastScreen() {
 	const fasting = useStore((s) => s.fasting);
 	const profile = useStore((s) => s.profile);
+	const ai = useStore((s) => s.ai);
 	const endFast = useStore((s) => s.endFast);
 	const startFast = useStore((s) => s.startFast);
+	const clearPostFastInsight = useStore((s) => s.clearPostFastInsight);
 
 	// Compute time display
 	const getTimerDisplay = () => {
@@ -74,6 +83,38 @@ export default function FastScreen() {
 					/>
 				</View>
 
+				{/* Post-Fast Insight */}
+				{(ai.insightLoading || ai.postFastInsight) && (
+					<Card
+						variant="navy"
+						style={styles.insightCard}
+					>
+						{ai.insightLoading ? (
+							<View style={styles.insightLoading}>
+								<ActivityIndicator
+									size="small"
+									color={colors.lightBlue}
+								/>
+								<Text style={styles.insightLoadingText}>
+									Analyzing your fast…
+								</Text>
+							</View>
+						) : (
+							<>
+								<Text style={styles.insightTitle}>✨ Post-Fast Insight</Text>
+								<Text style={styles.insightText}>{ai.postFastInsight}</Text>
+								<View style={{ marginTop: 12 }}>
+									<Button
+										title="Dismiss"
+										variant="ghost"
+										onPress={clearPostFastInsight}
+									/>
+								</View>
+							</>
+						)}
+					</Card>
+				)}
+
 				{/* Bottom spacer for tab bar */}
 				<View style={{ height: 100 }} />
 			</ScrollView>
@@ -124,5 +165,28 @@ const styles = StyleSheet.create({
 	actions: {
 		gap: 10,
 		marginTop: 20,
+	},
+	insightCard: {
+		marginTop: 16,
+		padding: 20,
+	},
+	insightLoading: {
+		alignItems: 'center',
+		paddingVertical: 12,
+		gap: 8,
+	},
+	insightLoadingText: {
+		...typography.meta,
+		color: colors.lightBlue,
+	},
+	insightTitle: {
+		...typography.section,
+		color: colors.surface,
+		marginBottom: 8,
+	},
+	insightText: {
+		...typography.body,
+		color: colors.lightBlue,
+		lineHeight: 22,
 	},
 });

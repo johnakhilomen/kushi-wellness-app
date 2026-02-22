@@ -1,10 +1,33 @@
-import React from 'react';
-import { View, Text, StyleSheet, SafeAreaView, ScrollView } from 'react-native';
+import React, { useEffect } from 'react';
+import {
+	View,
+	Text,
+	StyleSheet,
+	SafeAreaView,
+	ScrollView,
+	TouchableOpacity,
+	ActivityIndicator,
+} from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { colors, typography, spacing, radius } from '../../constants/theme';
 import { Card } from '../../components/ui/Card';
+import { useStore } from '../../store/useStore';
 
 export default function RitualsScreen() {
+	const profile = useStore((s) => s.profile);
+	const ai = useStore((s) => s.ai);
+	const fetchDailyRituals = useStore((s) => s.fetchDailyRituals);
+	const completeRitual = useStore((s) => s.completeRitual);
+
+	useEffect(() => {
+		if (profile.hasCompletedOnboarding) {
+			fetchDailyRituals();
+		}
+	}, [profile.hasCompletedOnboarding]);
+
+	const completedCount = ai.rituals.filter((r) => r.completed).length;
+	const totalCount = ai.rituals.length;
+
 	return (
 		<SafeAreaView style={styles.container}>
 			<ScrollView
@@ -21,16 +44,24 @@ export default function RitualsScreen() {
 				>
 					<Text style={styles.heroTitle}>Today's Sacred Arc</Text>
 					<Text style={styles.heroMeta}>
-						Morning to evening microbiotic rhythm
+						{ai.ritualsLoading
+							? 'Generating your daily rhythm…'
+							: totalCount > 0
+								? `${completedCount} of ${totalCount} rituals completed`
+								: 'Morning to evening microbiotic rhythm'}
 					</Text>
-					<View style={styles.heroButtons}>
-						<View style={styles.heroButton}>
-							<Text style={styles.heroButtonText}>4-7-8 Breath</Text>
+					{totalCount > 0 && (
+						<View style={styles.progressBarContainer}>
+							<View
+								style={[
+									styles.progressBar,
+									{
+										width: `${totalCount > 0 ? (completedCount / totalCount) * 100 : 0}%`,
+									},
+								]}
+							/>
 						</View>
-						<View style={styles.heroButton}>
-							<Text style={styles.heroButtonText}>Tea Reflection</Text>
-						</View>
-					</View>
+					)}
 				</Card>
 
 				{/* Ritual Timeline Card */}
@@ -39,28 +70,92 @@ export default function RitualsScreen() {
 					style={styles.card}
 				>
 					<Text style={styles.sectionTitle}>Daily Rituals</Text>
-					<View style={styles.timelineItem}>
-						<Text style={styles.timelineTime}>06:30</Text>
-						<View style={styles.timelineDot} />
-						<Text style={styles.timelineText}>Warm water + umeboshi plum</Text>
-					</View>
-					<View style={styles.timelineConnector} />
-					<View style={styles.timelineItem}>
-						<Text style={styles.timelineTime}>20:30</Text>
-						<View
-							style={[styles.timelineDot, { backgroundColor: colors.green }]}
-						/>
-						<Text style={styles.timelineText}>Gratitude body scan</Text>
-					</View>
+					{ai.ritualsLoading ? (
+						<View style={styles.loadingContainer}>
+							<ActivityIndicator
+								size="small"
+								color={colors.navy}
+							/>
+							<Text style={styles.loadingText}>
+								Creating personalized rituals…
+							</Text>
+						</View>
+					) : ai.rituals.length > 0 ? (
+						ai.rituals.map((ritual, i) => (
+							<React.Fragment key={ritual.id || i}>
+								<TouchableOpacity
+									style={styles.timelineItem}
+									onPress={() => completeRitual(i)}
+									activeOpacity={0.7}
+								>
+									<Text style={styles.timelineTime}>{ritual.time}</Text>
+									<View
+										style={[
+											styles.timelineCheck,
+											ritual.completed && styles.timelineCheckDone,
+										]}
+									>
+										{ritual.completed && (
+											<Text style={styles.checkMark}>✓</Text>
+										)}
+									</View>
+									<View style={styles.timelineContent}>
+										<Text
+											style={[
+												styles.timelineText,
+												ritual.completed && styles.timelineTextDone,
+											]}
+										>
+											{ritual.name}
+										</Text>
+										<Text style={styles.timelineDesc}>
+											{ritual.description}
+										</Text>
+									</View>
+								</TouchableOpacity>
+								{i < ai.rituals.length - 1 && (
+									<View style={styles.timelineConnector} />
+								)}
+							</React.Fragment>
+						))
+					) : (
+						<>
+							<View style={styles.timelineItem}>
+								<Text style={styles.timelineTime}>06:30</Text>
+								<View style={styles.timelineDot} />
+								<View style={styles.timelineContent}>
+									<Text style={styles.timelineText}>
+										Warm water + umeboshi plum
+									</Text>
+								</View>
+							</View>
+							<View style={styles.timelineConnector} />
+							<View style={styles.timelineItem}>
+								<Text style={styles.timelineTime}>20:30</Text>
+								<View
+									style={[
+										styles.timelineDot,
+										{ backgroundColor: colors.green },
+									]}
+								/>
+								<View style={styles.timelineContent}>
+									<Text style={styles.timelineText}>Gratitude body scan</Text>
+								</View>
+							</View>
+						</>
+					)}
 				</Card>
 
 				{/* Quote Card */}
 				<View style={styles.quoteCard}>
 					<Text style={styles.quoteText}>
-						"The food you eat can be either the safest and most powerful form of
-						medicine or the slowest form of poison."
+						{ai.ritualQuote
+							? `"${ai.ritualQuote}"`
+							: '"The food you eat can be either the safest and most powerful form of medicine or the slowest form of poison."'}
 					</Text>
-					<Text style={styles.quoteAuthor}>— Michio Kushi</Text>
+					<Text style={styles.quoteAuthor}>
+						— {ai.ritualQuoteAuthor || 'Michio Kushi'}
+					</Text>
 				</View>
 
 				{/* Evening Card — Gradient */}
@@ -72,10 +167,16 @@ export default function RitualsScreen() {
 				>
 					<Text style={styles.eveningTitle}>Evening Resonance</Text>
 					<Text style={styles.eveningMeta}>
-						Wind down with gentle belly breathing
+						{ai.eveningPractice
+							? ai.eveningPractice.description
+							: 'Wind down with gentle belly breathing'}
 					</Text>
 					<View style={styles.eveningButton}>
-						<Text style={styles.eveningButtonText}>7-min belly breathing</Text>
+						<Text style={styles.eveningButtonText}>
+							{ai.eveningPractice
+								? `${ai.eveningPractice.duration} ${ai.eveningPractice.name}`
+								: '7-min belly breathing'}
+						</Text>
 					</View>
 				</LinearGradient>
 
@@ -115,22 +216,18 @@ const styles = StyleSheet.create({
 	heroMeta: {
 		...typography.meta,
 		color: colors.lightBlue,
-		marginBottom: 16,
+		marginBottom: 12,
 	},
-	heroButtons: {
-		flexDirection: 'row',
-		gap: 10,
+	progressBarContainer: {
+		height: 6,
+		backgroundColor: 'rgba(255,255,255,0.15)',
+		borderRadius: 3,
+		overflow: 'hidden',
 	},
-	heroButton: {
-		flex: 1,
-		backgroundColor: 'rgba(255,255,255,0.12)',
-		borderRadius: radius.sm,
-		paddingVertical: 12,
-		alignItems: 'center',
-	},
-	heroButtonText: {
-		...typography.metaSmall,
-		color: colors.surface,
+	progressBar: {
+		height: '100%',
+		backgroundColor: colors.green,
+		borderRadius: 3,
 	},
 	card: {
 		padding: 18,
@@ -141,14 +238,24 @@ const styles = StyleSheet.create({
 		color: colors.text,
 		marginBottom: 16,
 	},
+	loadingContainer: {
+		alignItems: 'center',
+		paddingVertical: 24,
+		gap: 8,
+	},
+	loadingText: {
+		...typography.meta,
+		color: colors.muted,
+	},
 	timelineItem: {
 		flexDirection: 'row',
-		alignItems: 'center',
+		alignItems: 'flex-start',
 	},
 	timelineTime: {
 		...typography.metaSmall,
 		color: colors.muted,
 		width: 44,
+		marginTop: 2,
 	},
 	timelineDot: {
 		width: 8,
@@ -156,17 +263,48 @@ const styles = StyleSheet.create({
 		borderRadius: 4,
 		backgroundColor: colors.navy,
 		marginHorizontal: 10,
+		marginTop: 6,
+	},
+	timelineCheck: {
+		width: 22,
+		height: 22,
+		borderRadius: 11,
+		borderWidth: 2,
+		borderColor: colors.stroke,
+		marginHorizontal: 8,
+		alignItems: 'center',
+		justifyContent: 'center',
+	},
+	timelineCheckDone: {
+		borderColor: colors.green,
+		backgroundColor: colors.green,
+	},
+	checkMark: {
+		color: colors.surface,
+		fontSize: 12,
+		fontWeight: '700',
+	},
+	timelineContent: {
+		flex: 1,
 	},
 	timelineText: {
 		...typography.body,
 		color: colors.text,
-		flex: 1,
+	},
+	timelineTextDone: {
+		textDecorationLine: 'line-through',
+		color: colors.muted,
+	},
+	timelineDesc: {
+		...typography.meta,
+		color: colors.muted,
+		marginTop: 2,
 	},
 	timelineConnector: {
 		width: 1,
 		height: 20,
 		backgroundColor: colors.stroke,
-		marginLeft: 47,
+		marginLeft: 55,
 	},
 	quoteCard: {
 		backgroundColor: colors.quoteBg,

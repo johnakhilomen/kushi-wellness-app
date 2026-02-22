@@ -1,5 +1,12 @@
 import React from 'react';
-import { View, Text, StyleSheet, SafeAreaView, ScrollView } from 'react-native';
+import {
+	View,
+	Text,
+	StyleSheet,
+	SafeAreaView,
+	ScrollView,
+	ActivityIndicator,
+} from 'react-native';
 import { useRouter } from 'expo-router';
 import { colors, typography, spacing, radius } from '../../constants/theme';
 import { Button } from '../../components/ui/Button';
@@ -9,8 +16,10 @@ import { useStore } from '../../store/useStore';
 export default function ProfileScreen() {
 	const router = useRouter();
 	const profile = useStore((s) => s.profile);
+	const ai = useStore((s) => s.ai);
 	const retakeOnboarding = useStore((s) => s.retakeOnboarding);
 	const logout = useStore((s) => s.logout);
+	const refreshGutHarmony = useStore((s) => s.refreshGutHarmony);
 
 	const handleRetake = async () => {
 		await retakeOnboarding();
@@ -42,6 +51,39 @@ export default function ProfileScreen() {
 						<Text style={styles.statLabelLight}>Gut Harmony</Text>
 					</View>
 				</View>
+
+				{/* Gut Harmony Insight */}
+				<Card
+					variant="white"
+					style={styles.insightCard}
+				>
+					<Text style={styles.sectionTitle}>Gut Harmony Insight</Text>
+					{ai.gutHarmonyLoading ? (
+						<View style={styles.insightLoading}>
+							<ActivityIndicator
+								size="small"
+								color={colors.navy}
+							/>
+							<Text style={styles.insightLoadingText}>Analyzing…</Text>
+						</View>
+					) : profile.gutHarmonyExplanation ? (
+						<Text style={styles.insightText}>
+							{profile.gutHarmonyExplanation}
+						</Text>
+					) : (
+						<Text style={styles.insightText}>
+							Complete rituals and fasts to see your personalized gut harmony
+							analysis.
+						</Text>
+					)}
+					<View style={{ marginTop: 12 }}>
+						<Button
+							title="Refresh Score"
+							variant="secondary"
+							onPress={refreshGutHarmony}
+						/>
+					</View>
+				</Card>
 
 				{/* Preferences Card */}
 				<Card
@@ -152,5 +194,23 @@ const styles = StyleSheet.create({
 		height: 1,
 		backgroundColor: colors.stroke,
 		marginVertical: 12,
+	},
+	insightCard: {
+		padding: 18,
+		marginBottom: 16,
+	},
+	insightLoading: {
+		alignItems: 'center',
+		paddingVertical: 12,
+		gap: 8,
+	},
+	insightLoadingText: {
+		...typography.meta,
+		color: colors.muted,
+	},
+	insightText: {
+		...typography.body,
+		color: colors.muted,
+		lineHeight: 22,
 	},
 });

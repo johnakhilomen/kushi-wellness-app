@@ -1,6 +1,14 @@
 import { create } from 'zustand';
 import { supabase } from '../lib/supabase';
 import type { Session, User } from '@supabase/supabase-js';
+import {
+	generateMealPlan,
+	generatePostFastInsight,
+	generateDailyRituals,
+	generateGutHarmonyExplanation,
+	computeGutHarmony,
+} from '../lib/openai';
+import type { MealItem, RitualItem, EveningPractice } from '../lib/openai';
 
 // ---------- Types ----------
 export type FastingStyle = '14:10' | '16:8' | '12:12';
@@ -14,6 +22,7 @@ export interface UserProfile {
 	meditationGoal: number;
 	streakDays: number;
 	gutHarmony: number;
+	gutHarmonyExplanation: string;
 	hasCompletedOnboarding: boolean;
 	eatingWindowStart: string;
 	eatingWindowEnd: string;
@@ -24,6 +33,19 @@ interface FastingState {
 	fastStartTime: number | null;
 	fastEndTime: number | null;
 	sessionId: string | null;
+}
+
+interface AIState {
+	meals: MealItem[];
+	mealsLoading: boolean;
+	rituals: RitualItem[];
+	ritualsLoading: boolean;
+	ritualQuote: string;
+	ritualQuoteAuthor: string;
+	eveningPractice: EveningPractice | null;
+	postFastInsight: string | null;
+	insightLoading: boolean;
+	gutHarmonyLoading: boolean;
 }
 
 interface AppState {
@@ -39,6 +61,9 @@ interface AppState {
 
 	// Fasting
 	fasting: FastingState;
+
+	// AI
+	ai: AIState;
 
 	// Auth actions
 	initialize: () => Promise<void>;
@@ -63,6 +88,13 @@ interface AppState {
 	startFast: () => Promise<void>;
 	endFast: () => Promise<void>;
 	adjustWindow: (start: string, end: string) => Promise<void>;
+
+	// AI actions
+	fetchMealPlan: () => Promise<void>;
+	fetchDailyRituals: () => Promise<void>;
+	completeRitual: (index: number) => Promise<void>;
+	refreshGutHarmony: () => Promise<void>;
+	clearPostFastInsight: () => void;
 }
 
 const defaultProfile: UserProfile = {
@@ -73,6 +105,7 @@ const defaultProfile: UserProfile = {
 	meditationGoal: 12,
 	streakDays: 0,
 	gutHarmony: 50,
+	gutHarmonyExplanation: '',
 	hasCompletedOnboarding: false,
 	eatingWindowStart: '11:30 AM',
 	eatingWindowEnd: '7:30 PM',
@@ -85,6 +118,19 @@ const defaultFasting: FastingState = {
 	sessionId: null,
 };
 
+const defaultAI: AIState = {
+	meals: [],
+	mealsLoading: false,
+	rituals: [],
+	ritualsLoading: false,
+	ritualQuote: '',
+	ritualQuoteAuthor: '',
+	eveningPractice: null,
+	postFastInsight: null,
+	insightLoading: false,
+	gutHarmonyLoading: false,
+};
+
 export const useStore = create<AppState>((set, get) => ({
 	session: null,
 	user: null,
@@ -93,6 +139,7 @@ export const useStore = create<AppState>((set, get) => ({
 	pendingEmail: null,
 	profile: defaultProfile,
 	fasting: defaultFasting,
+	ai: defaultAI,
 
 	// ─── Initialize: restore session + listen for auth changes ───
 	initialize: async () => {
@@ -224,6 +271,7 @@ export const useStore = create<AppState>((set, get) => ({
 			user: null,
 			profile: defaultProfile,
 			fasting: defaultFasting,
+			ai: defaultAI,
 		});
 	},
 
@@ -264,6 +312,7 @@ export const useStore = create<AppState>((set, get) => ({
 				meditationGoal: data.meditation_goal,
 				streakDays: data.streak_days,
 				gutHarmony: data.gut_harmony,
+				gutHarmonyExplanation: data.gut_harmony_explanation ?? '',
 				hasCompletedOnboarding: data.has_completed_onboarding,
 				eatingWindowStart: data.eating_window_start,
 				eatingWindowEnd: data.eating_window_end,
@@ -402,6 +451,29 @@ export const useStore = create<AppState>((set, get) => ({
 			},
 			profile: { ...profile, streakDays: newStreak },
 		});
+
+		// Generate AI post-fast insight in background
+		set({ ai: { ...get().ai, insightLoading: true, postFastInsight: null } });
+		try {
+			const insight = await generatePostFastInsight(duration, get().profile);
+
+			// Save to DB
+			await supabase.from('fasting_insights').insert({
+				user_id: user.id,
+				fasting_session_id: fasting.sessionId,
+				duration_minutes: duration,
+				insight,
+			});
+
+			set({
+				ai: { ...get().ai, postFastInsight: insight, insightLoading: false },
+			});
+		} catch {
+			set({ ai: { ...get().ai, insightLoading: false } });
+		}
+
+		// Refresh gut harmony after fast
+		get().refreshGutHarmony();
 	},
 
 	// ─── Adjust Eating Window ───
@@ -424,5 +496,193 @@ export const useStore = create<AppState>((set, get) => ({
 				eatingWindowEnd: end,
 			},
 		});
+	},
+
+	// ═══════════════════════════════════════════
+	// AI-Powered Features
+	// ═══════════════════════════════════════════
+
+	// ─── Fetch / Generate Meal Plan ───
+	fetchMealPlan: async () => {
+		const userId = get().user?.id;
+		if (!userId) return;
+
+		set({ ai: { ...get().ai, mealsLoading: true } });
+
+		try {
+			const today = new Date().toISOString().split('T')[0];
+
+			// Check if we already have today's plan
+			const { data: existing } = await supabase
+				.from('meal_plans')
+				.select('meals')
+				.eq('user_id', userId)
+				.eq('plan_date', today)
+				.single();
+
+			if (existing?.meals) {
+				set({
+					ai: {
+						...get().ai,
+						meals: existing.meals as MealItem[],
+						mealsLoading: false,
+					},
+				});
+				return;
+			}
+
+			// Generate new plan via LLM
+			const meals = await generateMealPlan(get().profile);
+
+			// Save to DB (upsert)
+			await supabase
+				.from('meal_plans')
+				.upsert(
+					{ user_id: userId, plan_date: today, meals },
+					{ onConflict: 'user_id,plan_date' },
+				);
+
+			set({ ai: { ...get().ai, meals, mealsLoading: false } });
+		} catch {
+			set({ ai: { ...get().ai, mealsLoading: false } });
+		}
+	},
+
+	// ─── Fetch / Generate Daily Rituals ───
+	fetchDailyRituals: async () => {
+		const userId = get().user?.id;
+		if (!userId) return;
+
+		set({ ai: { ...get().ai, ritualsLoading: true } });
+
+		try {
+			const today = new Date().toISOString().split('T')[0];
+
+			// Check if we already have today's rituals
+			const { data: existing } = await supabase
+				.from('daily_rituals')
+				.select('*')
+				.eq('user_id', userId)
+				.eq('ritual_date', today)
+				.single();
+
+			if (existing) {
+				set({
+					ai: {
+						...get().ai,
+						rituals: existing.rituals as RitualItem[],
+						ritualQuote: existing.quote ?? '',
+						ritualQuoteAuthor: existing.quote_author ?? '',
+						eveningPractice:
+							existing.evening_practice as EveningPractice | null,
+						ritualsLoading: false,
+					},
+				});
+				return;
+			}
+
+			// Generate new rituals via LLM
+			const result = await generateDailyRituals(get().profile);
+
+			// Save to DB
+			await supabase.from('daily_rituals').upsert(
+				{
+					user_id: userId,
+					ritual_date: today,
+					rituals: result.rituals,
+					quote: result.quote,
+					quote_author: result.quoteAuthor,
+					evening_practice: result.eveningPractice,
+				},
+				{ onConflict: 'user_id,ritual_date' },
+			);
+
+			set({
+				ai: {
+					...get().ai,
+					rituals: result.rituals,
+					ritualQuote: result.quote,
+					ritualQuoteAuthor: result.quoteAuthor,
+					eveningPractice: result.eveningPractice,
+					ritualsLoading: false,
+				},
+			});
+		} catch {
+			set({ ai: { ...get().ai, ritualsLoading: false } });
+		}
+	},
+
+	// ─── Complete a Ritual ───
+	completeRitual: async (index: number) => {
+		const userId = get().user?.id;
+		if (!userId) return;
+
+		const rituals = [...get().ai.rituals];
+		rituals[index] = {
+			...rituals[index],
+			completed: !rituals[index].completed,
+		};
+
+		set({ ai: { ...get().ai, rituals } });
+
+		// Update in DB
+		const today = new Date().toISOString().split('T')[0];
+		await supabase
+			.from('daily_rituals')
+			.update({ rituals })
+			.eq('user_id', userId)
+			.eq('ritual_date', today);
+
+		// Refresh gut harmony
+		get().refreshGutHarmony();
+	},
+
+	// ─── Refresh Gut Harmony Score ───
+	refreshGutHarmony: async () => {
+		const userId = get().user?.id;
+		if (!userId) return;
+
+		set({ ai: { ...get().ai, gutHarmonyLoading: true } });
+
+		try {
+			const { rituals } = get().ai;
+			const completedCount = rituals.filter((r) => r.completed).length;
+			const newScore = computeGutHarmony(
+				get().profile.streakDays,
+				completedCount,
+				rituals.length,
+			);
+
+			// Get LLM explanation
+			const explanation = await generateGutHarmonyExplanation(
+				newScore,
+				get().profile,
+			);
+
+			// Save to DB
+			await supabase
+				.from('profiles')
+				.update({
+					gut_harmony: newScore,
+					gut_harmony_explanation: explanation,
+				})
+				.eq('id', userId);
+
+			set({
+				profile: {
+					...get().profile,
+					gutHarmony: newScore,
+					gutHarmonyExplanation: explanation,
+				},
+				ai: { ...get().ai, gutHarmonyLoading: false },
+			});
+		} catch {
+			set({ ai: { ...get().ai, gutHarmonyLoading: false } });
+		}
+	},
+
+	// ─── Clear Post-Fast Insight ───
+	clearPostFastInsight: () => {
+		set({ ai: { ...get().ai, postFastInsight: null } });
 	},
 }));
