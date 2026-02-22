@@ -47,7 +47,13 @@ function useProtectedRoute() {
 				router.replace('/(tabs)');
 			}
 		}
-	}, [session, profile.hasCompletedOnboarding, isLoading, segments, pendingEmail]);
+	}, [
+		session,
+		profile.hasCompletedOnboarding,
+		isLoading,
+		segments,
+		pendingEmail,
+	]);
 }
 
 export default function RootLayout() {
