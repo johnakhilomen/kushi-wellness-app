@@ -10,12 +10,22 @@ function useProtectedRoute() {
 	const session = useStore((s) => s.session);
 	const profile = useStore((s) => s.profile);
 	const isLoading = useStore((s) => s.isLoading);
+	const pendingEmail = useStore((s) => s.pendingEmail);
 
 	useEffect(() => {
 		if (isLoading) return;
 
 		const inAuthGroup = segments[0] === '(tabs)';
 		const onOnboarding = segments[0] === 'onboarding';
+		const onVerify = segments[0] === 'verify-email';
+
+		// Has a pending unverified email — go to verification screen
+		if (!session && pendingEmail) {
+			if (!onVerify) {
+				router.replace('/verify-email');
+			}
+			return;
+		}
 
 		if (!session) {
 			// Not signed in — allow splash, login, register, forgot-password
@@ -37,7 +47,7 @@ function useProtectedRoute() {
 				router.replace('/(tabs)');
 			}
 		}
-	}, [session, profile.hasCompletedOnboarding, isLoading, segments]);
+	}, [session, profile.hasCompletedOnboarding, isLoading, segments, pendingEmail]);
 }
 
 export default function RootLayout() {

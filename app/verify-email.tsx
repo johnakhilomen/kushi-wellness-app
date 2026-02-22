@@ -14,6 +14,7 @@ import { useRouter } from 'expo-router';
 import { colors, typography, spacing, radius } from '../constants/theme';
 import { Button } from '../components/ui/Button';
 import { useStore } from '../store/useStore';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const CODE_LENGTH = 8;
 
@@ -33,9 +34,16 @@ export default function VerifyEmailScreen() {
 	// Redirect if no pending email
 	useEffect(() => {
 		if (!pendingEmail) {
-			router.replace('/register');
+			router.replace('/login');
 		}
 	}, [pendingEmail]);
+
+	const handleBack = async () => {
+		// Clear persisted pending email so user can start fresh
+		await AsyncStorage.removeItem('kushi_pending_email');
+		useStore.setState({ pendingEmail: null });
+		router.replace('/login');
+	};
 
 	// Resend cooldown timer
 	useEffect(() => {
@@ -111,7 +119,7 @@ export default function VerifyEmailScreen() {
 				>
 					{/* Back */}
 					<TouchableOpacity
-						onPress={() => router.back()}
+						onPress={handleBack}
 						style={styles.backBtn}
 					>
 						<Text style={styles.backText}>← Back</Text>

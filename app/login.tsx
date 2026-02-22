@@ -35,10 +35,11 @@ export default function LoginScreen() {
 			return;
 		}
 
-		const success = await login(email, password);
-		if (success) {
-			// Auth-gated navigation in _layout will redirect
+		const result = await login(email, password);
+		if (result === ('verify' as unknown as boolean)) {
+			router.push('/verify-email');
 		}
+		// Auth-gated navigation in _layout will redirect on success
 	};
 
 	return (

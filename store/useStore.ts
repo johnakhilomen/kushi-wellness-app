@@ -1,6 +1,9 @@
 import { create } from 'zustand';
 import { supabase } from '../lib/supabase';
 import type { Session, User } from '@supabase/supabase-js';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+const PENDING_EMAIL_KEY = 'kushi_pending_email';
 import {
 	generateMealPlan,
 	generatePostFastInsight,
@@ -144,12 +147,23 @@ export const useStore = create<AppState>((set, get) => ({
 	// ─── Initialize: restore session + listen for auth changes ───
 	initialize: async () => {
 		try {
+			// Restore pending email from storage (survives app restart)
+			const savedEmail = await AsyncStorage.getItem(PENDING_EMAIL_KEY);
+			if (savedEmail) {
+				set({ pendingEmail: savedEmail });
+			}
+
 			const {
 				data: { session },
 			} = await supabase.auth.getSession();
 			set({ session, user: session?.user ?? null, isLoading: false });
 
+			// If we have a session, the email is verified — clear pending
 			if (session?.user) {
+				if (savedEmail) {
+					await AsyncStorage.removeItem(PENDING_EMAIL_KEY);
+					set({ pendingEmail: null });
+				}
 				await get().fetchProfile();
 			}
 
@@ -176,10 +190,19 @@ export const useStore = create<AppState>((set, get) => ({
 		});
 
 		if (error) {
+			// If email not confirmed, save pending email so user can verify
+			if (error.message.toLowerCase().includes('email not confirmed')) {
+				await AsyncStorage.setItem(PENDING_EMAIL_KEY, email);
+				set({ pendingEmail: email, isLoading: false });
+				// Return 'verify' sentinel so login screen can redirect
+				return 'verify' as unknown as boolean;
+			}
 			set({ authError: error.message, isLoading: false });
 			return false;
 		}
 
+		// Successful login means email is verified — clear any pending
+		await AsyncStorage.removeItem(PENDING_EMAIL_KEY);
 		set({
 			session: data.session,
 			user: data.user,
@@ -205,8 +228,9 @@ export const useStore = create<AppState>((set, get) => ({
 			return false;
 		}
 
-		// Supabase sends a 6-digit OTP to the email when email confirmation is enabled.
+		// Supabase sends an OTP to the email when email confirmation is enabled.
 		// data.session will be null until verification, so we store the pending email.
+		await AsyncStorage.setItem(PENDING_EMAIL_KEY, email);
 		set({
 			pendingEmail: email,
 			isLoading: false,
@@ -235,6 +259,7 @@ export const useStore = create<AppState>((set, get) => ({
 			return false;
 		}
 
+		await AsyncStorage.removeItem(PENDING_EMAIL_KEY);
 		set({
 			session: data.session,
 			user: data.user,
