@@ -8,12 +8,18 @@ import { useStore } from '../../store/useStore';
 
 export default function ProfileScreen() {
 	const router = useRouter();
-	const user = useStore((s) => s.user);
+	const profile = useStore((s) => s.profile);
 	const retakeOnboarding = useStore((s) => s.retakeOnboarding);
+	const logout = useStore((s) => s.logout);
 
-	const handleRetake = () => {
-		retakeOnboarding();
+	const handleRetake = async () => {
+		await retakeOnboarding();
 		router.push('/retake-onboarding');
+	};
+
+	const handleLogout = async () => {
+		await logout();
+		router.replace('/');
 	};
 
 	return (
@@ -28,11 +34,11 @@ export default function ProfileScreen() {
 				{/* Stats Row */}
 				<View style={styles.statsRow}>
 					<View style={[styles.statCard, { backgroundColor: colors.navy }]}>
-						<Text style={styles.statValueLight}>{user.streakDays}</Text>
+						<Text style={styles.statValueLight}>{profile.streakDays}</Text>
 						<Text style={styles.statLabelLight}>Streak Days</Text>
 					</View>
 					<View style={[styles.statCard, { backgroundColor: colors.green }]}>
-						<Text style={styles.statValueLight}>{user.gutHarmony}%</Text>
+						<Text style={styles.statValueLight}>{profile.gutHarmony}%</Text>
 						<Text style={styles.statLabelLight}>Gut Harmony</Text>
 					</View>
 				</View>
@@ -45,19 +51,19 @@ export default function ProfileScreen() {
 					<Text style={styles.sectionTitle}>Your Preferences</Text>
 					<View style={styles.prefRow}>
 						<Text style={styles.prefLabel}>Fasting style</Text>
-						<Text style={styles.prefValue}>{user.fastingStyle}</Text>
+						<Text style={styles.prefValue}>{profile.fastingStyle}</Text>
 					</View>
 					<View style={styles.prefDivider} />
 					<View style={styles.prefRow}>
 						<Text style={styles.prefLabel}>Meditation goal</Text>
-						<Text style={styles.prefValue}>{user.meditationGoal} min</Text>
+						<Text style={styles.prefValue}>{profile.meditationGoal} min</Text>
 					</View>
 					<View style={styles.prefDivider} />
 					<View style={styles.prefRow}>
 						<Text style={styles.prefLabel}>Primary focus</Text>
 						<Text style={styles.prefValue}>
-							{user.primaryIntention.charAt(0).toUpperCase() +
-								user.primaryIntention.slice(1)}
+							{profile.primaryIntention.charAt(0).toUpperCase() +
+								profile.primaryIntention.slice(1)}
 						</Text>
 					</View>
 				</Card>
@@ -68,6 +74,15 @@ export default function ProfileScreen() {
 					variant="secondary"
 					onPress={handleRetake}
 				/>
+
+				{/* Logout */}
+				<View style={{ marginTop: 12 }}>
+					<Button
+						title="Log Out"
+						variant="ghost"
+						onPress={handleLogout}
+					/>
+				</View>
 
 				{/* Bottom spacer for tab bar */}
 				<View style={{ height: 100 }} />

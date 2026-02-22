@@ -19,13 +19,25 @@ import { useStore } from '../store/useStore';
 export default function LoginScreen() {
 	const router = useRouter();
 	const login = useStore((s) => s.login);
+	const authError = useStore((s) => s.authError);
+	const isLoading = useStore((s) => s.isLoading);
+	const setAuthError = useStore((s) => s.setAuthError);
 	const [email, setEmail] = useState('');
 	const [password, setPassword] = useState('');
+	const [localError, setLocalError] = useState('');
 
-	const handleLogin = () => {
-		if (email && password) {
-			login(email, password);
-			router.replace('/(tabs)');
+	const handleLogin = async () => {
+		setLocalError('');
+		setAuthError(null);
+
+		if (!email || !password) {
+			setLocalError('Please fill in all fields');
+			return;
+		}
+
+		const success = await login(email, password);
+		if (success) {
+			// Auth-gated navigation in _layout will redirect
 		}
 	};
 
@@ -72,14 +84,22 @@ export default function LoginScreen() {
 						/>
 					</View>
 
+					{/* Error */}
+					{localError || authError ? (
+						<Text style={styles.errorText}>{localError || authError}</Text>
+					) : null}
+
 					{/* Forgot Password */}
-					<TouchableOpacity style={styles.forgotBtn}>
+					<TouchableOpacity
+						style={styles.forgotBtn}
+						onPress={() => router.push('/forgot-password')}
+					>
 						<Text style={styles.forgotText}>Forgot password?</Text>
 					</TouchableOpacity>
 
 					{/* Login CTA */}
 					<Button
-						title="Log in"
+						title={isLoading ? 'Logging in...' : 'Log in'}
 						onPress={handleLogin}
 					/>
 
@@ -179,5 +199,12 @@ const styles = StyleSheet.create({
 	footerLink: {
 		...typography.section,
 		color: colors.navy,
+	},
+	errorText: {
+		color: '#D32F2F',
+		fontFamily: 'Inter',
+		fontSize: 13,
+		textAlign: 'center',
+		marginBottom: 10,
 	},
 });

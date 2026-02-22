@@ -19,14 +19,34 @@ import { useStore } from '../store/useStore';
 export default function RegisterScreen() {
 	const router = useRouter();
 	const register = useStore((s) => s.register);
+	const authError = useStore((s) => s.authError);
+	const isLoading = useStore((s) => s.isLoading);
+	const setAuthError = useStore((s) => s.setAuthError);
 	const [name, setName] = useState('');
 	const [email, setEmail] = useState('');
 	const [password, setPassword] = useState('');
 	const [confirmPassword, setConfirmPassword] = useState('');
+	const [localError, setLocalError] = useState('');
 
-	const handleRegister = () => {
-		if (name && email && password && password === confirmPassword) {
-			register(name, email, password);
+	const handleRegister = async () => {
+		setLocalError('');
+		setAuthError(null);
+
+		if (!name || !email || !password) {
+			setLocalError('Please fill in all fields');
+			return;
+		}
+		if (password !== confirmPassword) {
+			setLocalError('Passwords do not match');
+			return;
+		}
+		if (password.length < 6) {
+			setLocalError('Password must be at least 6 characters');
+			return;
+		}
+
+		const success = await register(name, email, password);
+		if (success) {
 			router.push('/onboarding');
 		}
 	};
@@ -86,6 +106,11 @@ export default function RegisterScreen() {
 						/>
 					</View>
 
+					{/* Error */}
+					{localError || authError ? (
+						<Text style={styles.errorText}>{localError || authError}</Text>
+					) : null}
+
 					{/* Consent */}
 					<Text style={styles.consent}>
 						By creating an account you agree to our Terms of{'\n'}Service and
@@ -94,7 +119,7 @@ export default function RegisterScreen() {
 
 					{/* CTA */}
 					<Button
-						title="Create Account"
+						title={isLoading ? 'Creating Account...' : 'Create Account'}
 						onPress={handleRegister}
 					/>
 
@@ -164,5 +189,12 @@ const styles = StyleSheet.create({
 	footerLink: {
 		...typography.section,
 		color: colors.navy,
+	},
+	errorText: {
+		color: '#D32F2F',
+		fontFamily: 'Inter',
+		fontSize: 13,
+		textAlign: 'center',
+		marginBottom: 10,
 	},
 });

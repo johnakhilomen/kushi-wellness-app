@@ -19,7 +19,7 @@ function getDayOfWeek() {
 }
 
 export default function HomeScreen() {
-	const user = useStore((s) => s.user);
+	const profile = useStore((s) => s.profile);
 	const fasting = useStore((s) => s.fasting);
 
 	// Compute fasting time display
@@ -48,7 +48,7 @@ export default function HomeScreen() {
 
 				{/* Streak Badge */}
 				<View style={styles.badgeRow}>
-					<StreakBadge days={user.streakDays} />
+					<StreakBadge days={profile.streakDays} />
 				</View>
 
 				{/* Fasting Card */}
@@ -58,7 +58,7 @@ export default function HomeScreen() {
 				>
 					<Text style={styles.timerText}>{getTimerDisplay()}</Text>
 					<Text style={styles.timerMeta}>
-						Eating window opens at {fasting.eatingWindowStart}
+						Eating window opens at {profile.eatingWindowStart}
 					</Text>
 					<View style={styles.organRow}>
 						<View style={styles.organItem}>
@@ -69,7 +69,7 @@ export default function HomeScreen() {
 						<View style={styles.organItem}>
 							<Text style={styles.organIcon}>🌿</Text>
 							<Text style={styles.organLabel}>Gut</Text>
-							<Text style={styles.organValue}>{user.gutHarmony}%</Text>
+							<Text style={styles.organValue}>{profile.gutHarmony}%</Text>
 						</View>
 					</View>
 				</Card>

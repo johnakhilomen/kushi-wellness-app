@@ -27,14 +27,19 @@ export default function OnboardingScreen() {
 	const completeOnboarding = useStore((s) => s.completeOnboarding);
 	const [intention, setIntention] = useState<PrimaryIntention>('energy');
 	const [fastingStyle, setFastingStyle] = useState<FastingStyle>('14:10');
+	const [loading, setLoading] = useState(false);
 
-	const handleContinue = () => {
-		completeOnboarding(intention, fastingStyle);
+	const handleContinue = async () => {
+		setLoading(true);
+		await completeOnboarding(intention, fastingStyle);
+		setLoading(false);
 		router.replace('/(tabs)');
 	};
 
-	const handleSkip = () => {
-		completeOnboarding('energy', '14:10');
+	const handleSkip = async () => {
+		setLoading(true);
+		await completeOnboarding('energy', '14:10');
+		setLoading(false);
 		router.replace('/(tabs)');
 	};
 
@@ -95,7 +100,7 @@ export default function OnboardingScreen() {
 				{/* CTAs */}
 				<View style={styles.ctas}>
 					<Button
-						title="Continue to Home"
+						title={loading ? 'Saving...' : 'Continue to Home'}
 						onPress={handleContinue}
 					/>
 					<Button

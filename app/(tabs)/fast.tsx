@@ -8,7 +8,9 @@ import { useStore } from '../../store/useStore';
 
 export default function FastScreen() {
 	const fasting = useStore((s) => s.fasting);
+	const profile = useStore((s) => s.profile);
 	const endFast = useStore((s) => s.endFast);
+	const startFast = useStore((s) => s.startFast);
 
 	// Compute time display
 	const getTimerDisplay = () => {
@@ -46,14 +48,14 @@ export default function FastScreen() {
 						<View style={styles.windowItem}>
 							<Text style={styles.windowLabel}>Fasting</Text>
 							<Text style={styles.windowTime}>
-								7:30 PM – {fasting.eatingWindowStart}
+								7:30 PM – {profile.eatingWindowStart}
 							</Text>
 						</View>
 						<View style={styles.windowDivider} />
 						<View style={styles.windowItem}>
 							<Text style={styles.windowLabel}>Eating</Text>
 							<Text style={styles.windowTime}>
-								{fasting.eatingWindowStart} – {fasting.eatingWindowEnd}
+								{profile.eatingWindowStart} – {profile.eatingWindowEnd}
 							</Text>
 						</View>
 					</View>
@@ -62,8 +64,8 @@ export default function FastScreen() {
 				{/* Quick Actions */}
 				<View style={styles.actions}>
 					<Button
-						title="End Fast"
-						onPress={endFast}
+						title={fasting.isFasting ? 'End Fast' : 'Start Fast'}
+						onPress={fasting.isFasting ? endFast : startFast}
 					/>
 					<Button
 						title="Adjust Window"
