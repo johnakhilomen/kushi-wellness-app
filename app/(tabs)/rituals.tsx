@@ -11,6 +11,7 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { colors, typography, spacing, radius } from '../../constants/theme';
 import { Card } from '../../components/ui/Card';
+import { Tooltip } from '../../components/ui/Tooltip';
 import { useStore } from '../../store/useStore';
 
 export default function RitualsScreen() {
@@ -42,7 +43,11 @@ export default function RitualsScreen() {
 					variant="navy"
 					style={styles.heroCard}
 				>
-					<Text style={styles.heroTitle}>Today's Sacred Arc</Text>
+					<Tooltip
+						term="Today's Sacred Arc"
+						explanation="Your personalised daily rhythm of rituals from morning to evening — designed to align body, mind, and spirit with your chosen diet philosophy."
+						style={styles.heroTitle}
+					/>
 					<Text style={styles.heroMeta}>
 						{ai.ritualsLoading
 							? 'Generating your daily rhythm…'
@@ -165,7 +170,11 @@ export default function RitualsScreen() {
 					end={{ x: 1, y: 1 }}
 					style={styles.eveningCard}
 				>
-					<Text style={styles.eveningTitle}>Evening Resonance</Text>
+					<Tooltip
+						term="Evening Resonance"
+						explanation="A gentle wind-down practice to close your day with intention — calming the nervous system and preparing the body for restorative sleep."
+						style={styles.eveningTitle}
+					/>
 					<Text style={styles.eveningMeta}>
 						{ai.eveningPractice
 							? ai.eveningPractice.description

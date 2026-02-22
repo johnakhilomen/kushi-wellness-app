@@ -7,6 +7,7 @@
  */
 
 import type { UserProfile } from '../store/useStore';
+import { DIET_DEFINITIONS } from '../constants/diets';
 
 const OPENAI_API_KEY = process.env.EXPO_PUBLIC_OPENAI_API_KEY ?? '';
 
@@ -81,7 +82,9 @@ async function chat(messages: ChatMessage[], json = true): Promise<string> {
 // ─── Helper: Profile Context ───
 
 function profileContext(profile: UserProfile): string {
+	const diet = DIET_DEFINITIONS[profile.dietPhilosophy ?? 'macrobiotic'];
 	return [
+		`Diet philosophy: ${diet.label} (${diet.tradition})`,
 		`Fasting style: ${profile.fastingStyle}`,
 		`Eating window: ${profile.eatingWindowStart} – ${profile.eatingWindowEnd}`,
 		`Primary intention: ${profile.primaryIntention}`,
@@ -91,23 +94,37 @@ function profileContext(profile: UserProfile): string {
 	].join('\n');
 }
 
+function dietPrompt(profile: UserProfile): {
+	guidance: string;
+	keyFigure: string;
+	label: string;
+} {
+	const diet = DIET_DEFINITIONS[profile.dietPhilosophy ?? 'macrobiotic'];
+	return {
+		guidance: diet.promptGuidance,
+		keyFigure: diet.keyFigure,
+		label: diet.label,
+	};
+}
+
 // ─── 1. Generate Meal Plan ───
 
 export async function generateMealPlan(
 	profile: UserProfile,
 ): Promise<MealItem[]> {
+	const { guidance, keyFigure, label } = dietPrompt(profile);
 	const raw = await chat([
 		{
 			role: 'system',
-			content: `You are a macrobiotic nutritionist following the philosophy of Michio Kushi. 
-Generate a daily meal schedule that fits within the user's eating window. 
-Each meal should be plant-based, whole-grain focused, and aligned with macrobiotic principles.
+			content: `You are a ${label} nutritionist following the philosophy of ${keyFigure}.
+${guidance}
+Generate a daily meal schedule that fits within the user's eating window.
 Return JSON: { "meals": [{ "name": string, "time": string (e.g. "11:30 AM"), "description": string (short, ~10 words), "type": "entry"|"core"|"snack"|"closing" }] }
 Generate 3-4 meals. Times must fall within the eating window.`,
 		},
 		{
 			role: 'user',
-			content: `Generate today's macrobiotic meal plan.\n\n${profileContext(profile)}`,
+			content: `Generate today's ${label} meal plan.\n\n${profileContext(profile)}`,
 		},
 	]);
 
@@ -125,14 +142,16 @@ export async function generatePostFastInsight(
 	const mins = durationMinutes % 60;
 	const durationStr = hours > 0 ? `${hours}h ${mins}m` : `${mins} minutes`;
 
+	const { guidance, keyFigure, label } = dietPrompt(profile);
 	const raw = await chat(
 		[
 			{
 				role: 'system',
-				content: `You are a wellness coach specializing in macrobiotic fasting (Michio Kushi philosophy).
+				content: `You are a wellness coach specializing in ${label} fasting (${keyFigure} philosophy).
+${guidance}
 Give a brief, encouraging post-fast insight (2-3 sentences). 
-Mention what the body accomplished during this fast, and a gentle suggestion for breaking the fast.
-Keep it warm, personal, and grounded in macrobiotic wellness.`,
+Mention what the body accomplished during this fast, and a gentle suggestion for breaking the fast aligned with ${label} principles.
+Keep it warm, personal, and grounded in ${label} wellness.`,
 			},
 			{
 				role: 'user',
@@ -150,16 +169,18 @@ Keep it warm, personal, and grounded in macrobiotic wellness.`,
 export async function generateDailyRituals(
 	profile: UserProfile,
 ): Promise<DailyRitualsResponse> {
+	const { guidance, keyFigure, label } = dietPrompt(profile);
 	const raw = await chat([
 		{
 			role: 'system',
-			content: `You are a macrobiotic wellness guide following the philosophy of Michio Kushi.
+			content: `You are a ${label} wellness guide following the philosophy of ${keyFigure}.
+${guidance}
 Generate a personalized set of daily rituals, an inspirational quote, and an evening wind-down practice.
-The rituals should align with the user's intention and fasting schedule.
+The rituals should align with the user's ${label} lifestyle, intention, and fasting schedule.
 Return JSON:
 {
   "rituals": [{ "id": string (unique), "time": string (e.g. "06:30"), "name": string, "description": string (~15 words) }],
-  "quote": string (a relevant macrobiotic/wellness quote),
+  "quote": string (a relevant ${label}/wellness quote),
   "quoteAuthor": string,
   "eveningPractice": { "name": string, "duration": string (e.g. "7 min"), "description": string (~15 words) }
 }
@@ -189,14 +210,16 @@ export async function generateGutHarmonyExplanation(
 	score: number,
 	profile: UserProfile,
 ): Promise<string> {
+	const { guidance, label } = dietPrompt(profile);
 	const raw = await chat(
 		[
 			{
 				role: 'system',
-				content: `You are a macrobiotic wellness analyst. 
-Explain what the user's gut harmony score means in 2-3 short sentences. 
+				content: `You are a ${label} wellness analyst.
+${guidance}
+Explain what the user's gut harmony score means in 2-3 short sentences.
 Base it on their fasting consistency (streak days) and overall lifestyle pattern.
-Be encouraging but honest. Use macrobiotic language.`,
+Be encouraging but honest. Use ${label} language and concepts.`,
 			},
 			{
 				role: 'user',

@@ -55,25 +55,19 @@ export default function RetakeOnboardingScreen() {
 						<View style={styles.stepNumber}>
 							<Text style={styles.stepNumberText}>1</Text>
 						</View>
-						<Text style={styles.stepText}>Primary wellness intention</Text>
+						<Text style={styles.stepText}>Diet philosophy</Text>
 					</View>
 					<View style={styles.stepItem}>
 						<View style={styles.stepNumber}>
 							<Text style={styles.stepNumberText}>2</Text>
 						</View>
-						<Text style={styles.stepText}>Preferred fasting style</Text>
+						<Text style={styles.stepText}>Primary wellness intention</Text>
 					</View>
 					<View style={styles.stepItem}>
 						<View style={styles.stepNumber}>
 							<Text style={styles.stepNumberText}>3</Text>
 						</View>
-						<Text style={styles.stepText}>Daily meditation goal</Text>
-					</View>
-					<View style={styles.stepItem}>
-						<View style={styles.stepNumber}>
-							<Text style={styles.stepNumberText}>4</Text>
-						</View>
-						<Text style={styles.stepText}>Meal schedule preferences</Text>
+						<Text style={styles.stepText}>Preferred fasting style</Text>
 					</View>
 				</Card>
 

@@ -10,7 +10,9 @@ import {
 import { colors, typography, spacing, radius } from '../../constants/theme';
 import { Card } from '../../components/ui/Card';
 import { StreakBadge } from '../../components/ui/StreakBadge';
+import { Tooltip } from '../../components/ui/Tooltip';
 import { useStore } from '../../store/useStore';
+import { DIET_DEFINITIONS } from '../../constants/diets';
 
 function getDayOfWeek() {
 	const days = [
@@ -80,9 +82,17 @@ export default function HomeScreen() {
 					style={styles.card}
 				>
 					<Text style={styles.timerText}>{getTimerDisplay()}</Text>
-					<Text style={styles.timerMeta}>
-						Eating window opens at {profile.eatingWindowStart}
-					</Text>
+					<View style={styles.timerMetaRow}>
+						<Tooltip
+							term="Eating window"
+							explanation="The daily window during which you consume meals. Outside this window your body enters a fasting state, promoting autophagy and gut restoration."
+							style={styles.timerMetaTooltip}
+						/>
+						<Text style={styles.timerMeta}>
+							{' '}
+							opens at {profile.eatingWindowStart}
+						</Text>
+					</View>
 					<View style={styles.organRow}>
 						<View style={styles.organItem}>
 							<Text style={styles.organIcon}>🫁</Text>
@@ -91,7 +101,11 @@ export default function HomeScreen() {
 						</View>
 						<View style={styles.organItem}>
 							<Text style={styles.organIcon}>🌿</Text>
-							<Text style={styles.organLabel}>Gut</Text>
+							<Tooltip
+								term="Gut Harmony"
+								explanation="A composite score reflecting your fasting consistency and ritual adherence. Higher scores indicate better digestive balance and microbiome health."
+								style={styles.organLabelTooltip}
+							/>
 							<Text style={styles.organValue}>{profile.gutHarmony}%</Text>
 						</View>
 					</View>
@@ -102,7 +116,16 @@ export default function HomeScreen() {
 					variant="white"
 					style={styles.card}
 				>
-					<Text style={styles.sectionTitle}>Dynamic Diet Schedule</Text>
+					<View style={styles.sectionTitleRow}>
+						<Tooltip
+							term={`${DIET_DEFINITIONS[profile.dietPhilosophy ?? 'macrobiotic'].label} Diet Schedule`}
+							explanation={
+								DIET_DEFINITIONS[profile.dietPhilosophy ?? 'macrobiotic']
+									.tooltip
+							}
+							style={styles.sectionTitle}
+						/>
+					</View>
 					{ai.mealsLoading ? (
 						<View style={styles.loadingContainer}>
 							<ActivityIndicator
@@ -221,11 +244,26 @@ const styles = StyleSheet.create({
 		textAlign: 'center',
 		marginBottom: 4,
 	},
+	timerMetaRow: {
+		flexDirection: 'row',
+		justifyContent: 'center',
+		alignItems: 'center',
+		marginBottom: 16,
+	},
 	timerMeta: {
 		...typography.meta,
 		color: colors.muted,
-		textAlign: 'center',
-		marginBottom: 16,
+	},
+	timerMetaTooltip: {
+		...typography.meta,
+		color: colors.navy,
+	},
+	organLabelTooltip: {
+		...typography.metaSmall,
+		color: colors.navy,
+	},
+	sectionTitleRow: {
+		marginBottom: 14,
 	},
 	organRow: {
 		flexDirection: 'row',

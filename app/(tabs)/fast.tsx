@@ -11,6 +11,7 @@ import { colors, typography, spacing, radius } from '../../constants/theme';
 import { Button } from '../../components/ui/Button';
 import { Card } from '../../components/ui/Card';
 import { FastingRing } from '../../components/FastingRing';
+import { Tooltip } from '../../components/ui/Tooltip';
 import { useStore } from '../../store/useStore';
 
 export default function FastScreen() {
@@ -55,14 +56,22 @@ export default function FastScreen() {
 				>
 					<View style={styles.windowRow}>
 						<View style={styles.windowItem}>
-							<Text style={styles.windowLabel}>Fasting</Text>
+							<Tooltip
+								term="Fasting Window"
+								explanation="The period when you abstain from food, allowing your digestive system to rest and your body to enter repair mode through autophagy."
+								style={styles.windowLabel}
+							/>
 							<Text style={styles.windowTime}>
 								7:30 PM – {profile.eatingWindowStart}
 							</Text>
 						</View>
 						<View style={styles.windowDivider} />
 						<View style={styles.windowItem}>
-							<Text style={styles.windowLabel}>Eating</Text>
+							<Tooltip
+								term="Eating Window"
+								explanation="Your designated eating period, when meals are timed to optimize digestion and nutrient absorption aligned with your body's natural rhythm."
+								style={styles.windowLabel}
+							/>
 							<Text style={styles.windowTime}>
 								{profile.eatingWindowStart} – {profile.eatingWindowEnd}
 							</Text>
@@ -101,7 +110,14 @@ export default function FastScreen() {
 							</View>
 						) : (
 							<>
-								<Text style={styles.insightTitle}>✨ Post-Fast Insight</Text>
+								<View style={styles.insightTitleRow}>
+									<Text style={styles.insightTitleEmoji}>✨ </Text>
+									<Tooltip
+										term="Post-Fast Insight"
+										explanation="A personalised AI-generated reflection on what your body accomplished during your fast, with guidance on how to break your fast mindfully."
+										style={styles.insightTitleText}
+									/>
+								</View>
 								<Text style={styles.insightText}>{ai.postFastInsight}</Text>
 								<View style={{ marginTop: 12 }}>
 									<Button
@@ -179,10 +195,17 @@ const styles = StyleSheet.create({
 		...typography.meta,
 		color: colors.lightBlue,
 	},
-	insightTitle: {
+	insightTitleRow: {
+		flexDirection: 'row',
+		alignItems: 'center',
+		marginBottom: 8,
+	},
+	insightTitleEmoji: {
+		fontSize: 16,
+	},
+	insightTitleText: {
 		...typography.section,
 		color: colors.surface,
-		marginBottom: 8,
 	},
 	insightText: {
 		...typography.body,

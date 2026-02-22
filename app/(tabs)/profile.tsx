@@ -11,7 +11,9 @@ import { useRouter } from 'expo-router';
 import { colors, typography, spacing, radius } from '../../constants/theme';
 import { Button } from '../../components/ui/Button';
 import { Card } from '../../components/ui/Card';
+import { Tooltip } from '../../components/ui/Tooltip';
 import { useStore } from '../../store/useStore';
+import { DIET_DEFINITIONS } from '../../constants/diets';
 
 export default function ProfileScreen() {
 	const router = useRouter();
@@ -44,11 +46,19 @@ export default function ProfileScreen() {
 				<View style={styles.statsRow}>
 					<View style={[styles.statCard, { backgroundColor: colors.navy }]}>
 						<Text style={styles.statValueLight}>{profile.streakDays}</Text>
-						<Text style={styles.statLabelLight}>Streak Days</Text>
+						<Tooltip
+							term="Streak Days"
+							explanation="The number of consecutive days you have completed your fasting window. Consistency builds gut resilience and metabolic flexibility."
+							style={styles.statTooltipLight}
+						/>
 					</View>
 					<View style={[styles.statCard, { backgroundColor: colors.green }]}>
 						<Text style={styles.statValueLight}>{profile.gutHarmony}%</Text>
-						<Text style={styles.statLabelLight}>Gut Harmony</Text>
+						<Tooltip
+							term="Gut Harmony"
+							explanation="A composite score reflecting your fasting consistency and ritual adherence. Higher scores indicate better digestive balance."
+							style={styles.statTooltipLight}
+						/>
 					</View>
 				</View>
 
@@ -108,6 +118,28 @@ export default function ProfileScreen() {
 								profile.primaryIntention.slice(1)}
 						</Text>
 					</View>
+					<View style={styles.prefDivider} />
+					<View style={styles.prefRow}>
+						<Tooltip
+							term="Diet philosophy"
+							explanation={
+								DIET_DEFINITIONS[profile.dietPhilosophy ?? 'macrobiotic']
+									.tooltip
+							}
+							style={styles.prefLabel}
+						/>
+						<View style={styles.prefDietValue}>
+							<Text style={styles.prefDietIcon}>
+								{DIET_DEFINITIONS[profile.dietPhilosophy ?? 'macrobiotic'].icon}
+							</Text>
+							<Text style={styles.prefValue}>
+								{
+									DIET_DEFINITIONS[profile.dietPhilosophy ?? 'macrobiotic']
+										.label
+								}
+							</Text>
+						</View>
+					</View>
 				</Card>
 
 				{/* Retake Onboarding */}
@@ -166,6 +198,19 @@ const styles = StyleSheet.create({
 	statLabelLight: {
 		...typography.metaSmall,
 		color: colors.lightBlue,
+	},
+	statTooltipLight: {
+		...typography.metaSmall,
+		color: colors.lightBlue,
+		textDecorationColor: colors.lightBlue,
+	},
+	prefDietValue: {
+		flexDirection: 'row',
+		alignItems: 'center',
+		gap: 6,
+	},
+	prefDietIcon: {
+		fontSize: 18,
 	},
 	prefsCard: {
 		padding: 18,

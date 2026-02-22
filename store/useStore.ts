@@ -16,10 +16,13 @@ import type { MealItem, RitualItem, EveningPractice } from '../lib/openai';
 // ---------- Types ----------
 export type FastingStyle = '14:10' | '16:8' | '12:12';
 export type PrimaryIntention = 'digestion' | 'weight' | 'energy';
+export type { DietPhilosophy } from '../constants/diets';
+import type { DietPhilosophy } from '../constants/diets';
 
 export interface UserProfile {
 	name: string;
 	email: string;
+	dietPhilosophy: DietPhilosophy;
 	fastingStyle: FastingStyle;
 	primaryIntention: PrimaryIntention;
 	meditationGoal: number;
@@ -83,6 +86,7 @@ interface AppState {
 	completeOnboarding: (
 		intention: PrimaryIntention,
 		style: FastingStyle,
+		diet: DietPhilosophy,
 	) => Promise<void>;
 	retakeOnboarding: () => Promise<void>;
 	updateProfile: (updates: Partial<UserProfile>) => Promise<void>;
@@ -103,6 +107,7 @@ interface AppState {
 const defaultProfile: UserProfile = {
 	name: '',
 	email: '',
+	dietPhilosophy: 'macrobiotic',
 	fastingStyle: '14:10',
 	primaryIntention: 'energy',
 	meditationGoal: 12,
@@ -331,6 +336,8 @@ export const useStore = create<AppState>((set, get) => ({
 			profile: {
 				name: data.full_name ?? '',
 				email: data.email ?? '',
+				dietPhilosophy:
+					(data.diet_philosophy as DietPhilosophy) ?? 'macrobiotic',
 				fastingStyle: data.fasting_style as FastingStyle,
 				primaryIntention: data.primary_intention as PrimaryIntention,
 				meditationGoal: data.meditation_goal,
@@ -348,6 +355,7 @@ export const useStore = create<AppState>((set, get) => ({
 	completeOnboarding: async (
 		intention: PrimaryIntention,
 		style: FastingStyle,
+		diet: DietPhilosophy = 'macrobiotic',
 	) => {
 		const userId = get().user?.id;
 		if (!userId) return;
@@ -357,6 +365,7 @@ export const useStore = create<AppState>((set, get) => ({
 			.update({
 				primary_intention: intention,
 				fasting_style: style,
+				diet_philosophy: diet,
 				has_completed_onboarding: true,
 			})
 			.eq('id', userId);
@@ -367,6 +376,7 @@ export const useStore = create<AppState>((set, get) => ({
 					...get().profile,
 					primaryIntention: intention,
 					fastingStyle: style,
+					dietPhilosophy: diet,
 					hasCompletedOnboarding: true,
 				},
 			});
@@ -395,6 +405,8 @@ export const useStore = create<AppState>((set, get) => ({
 
 		const dbUpdates: Record<string, unknown> = {};
 		if (updates.name !== undefined) dbUpdates.full_name = updates.name;
+		if (updates.dietPhilosophy !== undefined)
+			dbUpdates.diet_philosophy = updates.dietPhilosophy;
 		if (updates.fastingStyle !== undefined)
 			dbUpdates.fasting_style = updates.fastingStyle;
 		if (updates.primaryIntention !== undefined)
