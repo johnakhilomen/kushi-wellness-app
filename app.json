@@ -33,12 +33,12 @@
       "expo-router",
       "expo-font"
     ],
+    "owner": "pixelforgelabsco",
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "dca297e7-7dfe-4076-a029-e9e8e6471e96"
+        "projectId": "a8b59b1c-127e-4427-85e6-040fad0ad8e1"
       }
-    },
-    "owner": "jonbasanti"
+    }
   }
 }
