@@ -23,8 +23,8 @@
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-      "package": "com.kushi.app",
-      "versionCode": 1
+      "package": "com.pixelforgelabsco.kushi",
+      "versionCode": 2
     },
     "web": {
       "favicon": "./assets/favicon.png"
