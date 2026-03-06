@@ -2,16 +2,19 @@ import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { colors, radius, typography } from '../../constants/theme';
 
+type TabKey = 'home' | 'fast' | 'cabinet' | 'ritual' | 'profile';
+
 interface TabBarProps {
-	activeTab: 'home' | 'fast' | 'ritual' | 'profile';
-	onTabPress: (tab: 'home' | 'fast' | 'ritual' | 'profile') => void;
+	activeTab: TabKey;
+	onTabPress: (tab: TabKey) => void;
 }
 
-const tabs = [
-	{ key: 'home' as const, label: 'Home' },
-	{ key: 'fast' as const, label: 'Fast' },
-	{ key: 'ritual' as const, label: 'Ritual' },
-	{ key: 'profile' as const, label: 'Profile' },
+const tabs: { key: TabKey; label: string }[] = [
+	{ key: 'home', label: 'Home' },
+	{ key: 'fast', label: 'Fast' },
+	{ key: 'cabinet', label: 'Cabinet' },
+	{ key: 'ritual', label: 'Ritual' },
+	{ key: 'profile', label: 'Profile' },
 ];
 
 export function TabBar({ activeTab, onTabPress }: TabBarProps) {
@@ -43,8 +46,8 @@ const styles = StyleSheet.create({
 		borderRadius: radius.xl,
 		height: 52,
 		padding: 6,
-		paddingHorizontal: 8,
-		gap: 8,
+		paddingHorizontal: 6,
+		gap: 4,
 	},
 	tab: {
 		flex: 1,
@@ -56,7 +59,9 @@ const styles = StyleSheet.create({
 		backgroundColor: colors.navy,
 	},
 	tabText: {
-		...typography.metaSmall,
+		fontFamily: 'Inter',
+		fontWeight: '500' as const,
+		fontSize: 10,
 		color: colors.placeholder,
 	},
 	activeTabText: {

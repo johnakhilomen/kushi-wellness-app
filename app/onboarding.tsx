@@ -30,9 +30,12 @@ const intentionOptions: {
 ];
 
 const fastingOptions: { key: FastingStyle; label: string; desc: string }[] = [
+	{ key: '12:12', label: '12:12', desc: '12h fast · 12h eating' },
 	{ key: '14:10', label: '14:10', desc: '14h fast · 10h eating' },
 	{ key: '16:8', label: '16:8', desc: '16h fast · 8h eating' },
-	{ key: '12:12', label: '12:12', desc: '12h fast · 12h eating' },
+	{ key: '18:6', label: '18:6', desc: '18h fast · 6h eating' },
+	{ key: '20:4', label: '20:4', desc: '20h fast · 4h eating (Warrior)' },
+	{ key: '23:1', label: 'OMAD', desc: '23h fast · 1h eating (One Meal A Day)' },
 ];
 
 const TOTAL_STEPS = 3;

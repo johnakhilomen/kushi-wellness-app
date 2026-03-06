@@ -31,6 +31,8 @@ const WINDOW_PRESETS: {
 		fast: '7:30 PM – 11:30 AM',
 	},
 	{ label: '18:6', start: '12:00 PM', end: '6:00 PM', fast: '6 PM – 12 PM' },
+	{ label: '20:4', start: '2:00 PM', end: '6:00 PM', fast: '6 PM – 2 PM' },
+	{ label: 'OMAD', start: '5:00 PM', end: '6:00 PM', fast: '6 PM – 5 PM' },
 ];
 
 export default function FastScreen() {

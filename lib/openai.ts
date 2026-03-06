@@ -232,7 +232,52 @@ Be encouraging but honest. Use ${label} language and concepts.`,
 	return raw.trim();
 }
 
-// ─── 5. Compute Gut Harmony Score ───
+// ─── 5. Generate Cabinet (Grocery List) ───
+
+export interface GroceryCategory {
+	category: string;
+	icon: string;
+	items: GroceryItem[];
+}
+
+export interface GroceryItem {
+	name: string;
+	quantity: string;
+	note: string;
+}
+
+export async function generateCabinetList(
+	profile: UserProfile,
+): Promise<GroceryCategory[]> {
+	const { guidance, keyFigure, label } = dietPrompt(profile);
+	const raw = await chat([
+		{
+			role: 'system',
+			content: `You are a ${label} nutritionist following the philosophy of ${keyFigure}.
+${guidance}
+Generate a weekly grocery/cabinet list organized by category, aligned with the user's ${label} diet philosophy and fasting schedule.
+Return JSON: { "categories": [{ "category": string, "icon": string (single emoji), "items": [{ "name": string, "quantity": string (e.g. "500g", "1 bunch", "2 cups"), "note": string (brief tip, ~8 words, e.g. "great for morning miso soup") }] }] }
+Generate 5-7 categories with 3-5 items each. Categories should be specific to the ${label} philosophy (e.g. for macrobiotic: "Whole Grains", "Sea Vegetables", "Fermented Foods"). Include seasonal and staple items.`,
+		},
+		{
+			role: 'user',
+			content: `Generate my weekly ${label} grocery list.\n\n${profileContext(profile)}\nCurrent season: ${getSeason()}.`,
+		},
+	]);
+
+	const parsed = JSON.parse(raw);
+	return parsed.categories;
+}
+
+function getSeason(): string {
+	const month = new Date().getMonth();
+	if (month >= 2 && month <= 4) return 'Spring';
+	if (month >= 5 && month <= 7) return 'Summer';
+	if (month >= 8 && month <= 10) return 'Autumn';
+	return 'Winter';
+}
+
+// ─── 6. Compute Gut Harmony Score ───
 
 export function computeGutHarmony(
 	streakDays: number,

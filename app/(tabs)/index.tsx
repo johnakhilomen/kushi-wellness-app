@@ -6,6 +6,7 @@ import {
 	SafeAreaView,
 	ScrollView,
 	ActivityIndicator,
+	Pressable,
 } from 'react-native';
 import { colors, typography, spacing, radius } from '../../constants/theme';
 import { Card } from '../../components/ui/Card';
@@ -39,9 +40,14 @@ export default function HomeScreen() {
 	const fasting = useStore((s) => s.fasting);
 	const ai = useStore((s) => s.ai);
 	const fetchMealPlan = useStore((s) => s.fetchMealPlan);
+	const hydration = useStore((s) => s.hydration);
+	const addGlass = useStore((s) => s.addGlass);
+	const removeGlass = useStore((s) => s.removeGlass);
+	const resetHydrationIfNewDay = useStore((s) => s.resetHydrationIfNewDay);
 
-	// Fetch meal plan on mount
+	// Fetch meal plan on mount + reset hydration
 	useEffect(() => {
+		resetHydrationIfNewDay();
 		if (profile.hasCompletedOnboarding) {
 			fetchMealPlan();
 		}
@@ -184,7 +190,60 @@ export default function HomeScreen() {
 					)}
 				</Card>
 
-				{/* Meditation Card */}
+				{/* Hydration Card */}
+				<Card
+					variant="white"
+					style={styles.card}
+				>
+					<View style={styles.sectionTitleRow}>
+						<Tooltip
+							term="Hydration"
+							explanation="Staying hydrated is essential during fasting. Aim for 8 glasses of water daily to support detoxification and gut health."
+							style={styles.sectionTitle}
+						/>
+					</View>
+					<View style={styles.waterRow}>
+						{Array.from({ length: hydration.goal }).map((_, i) => (
+							<View
+								key={i}
+								style={[
+									styles.waterDrop,
+									i < hydration.glasses && styles.waterDropFilled,
+								]}
+							>
+								<Text
+									style={[
+										styles.waterDropText,
+										i < hydration.glasses && styles.waterDropTextFilled,
+									]}
+								>
+									💧
+								</Text>
+							</View>
+						))}
+					</View>
+					<Text style={styles.waterCount}>
+						{hydration.glasses} of {hydration.goal} glasses
+					</Text>
+					<View style={styles.waterActions}>
+						<Pressable
+							style={styles.waterBtn}
+							onPress={removeGlass}
+						>
+							<Text style={styles.waterBtnText}>−</Text>
+						</Pressable>
+						<Pressable
+							style={[styles.waterBtn, styles.waterBtnPrimary]}
+							onPress={addGlass}
+						>
+							<Text style={[styles.waterBtnText, styles.waterBtnTextPrimary]}>
+								+ Add Glass
+							</Text>
+						</Pressable>
+					</View>
+				</Card>
+
+			{/* Meditation Card */}
 				<Card
 					variant="navy"
 					style={styles.card}
@@ -329,6 +388,58 @@ const styles = StyleSheet.create({
 	loadingText: {
 		...typography.meta,
 		color: colors.muted,
+	},
+	waterRow: {
+		flexDirection: 'row',
+		flexWrap: 'wrap',
+		gap: 8,
+		marginBottom: 10,
+	},
+	waterDrop: {
+		width: 34,
+		height: 34,
+		borderRadius: 17,
+		backgroundColor: colors.chipBg,
+		alignItems: 'center',
+		justifyContent: 'center',
+	},
+	waterDropFilled: {
+		backgroundColor: '#D6EBF2',
+	},
+	waterDropText: {
+		fontSize: 14,
+		opacity: 0.3,
+	},
+	waterDropTextFilled: {
+		opacity: 1,
+	},
+	waterCount: {
+		...typography.meta,
+		color: colors.muted,
+		textAlign: 'center',
+		marginBottom: 10,
+	},
+	waterActions: {
+		flexDirection: 'row',
+		gap: 10,
+	},
+	waterBtn: {
+		flex: 1,
+		backgroundColor: colors.chipBg,
+		borderRadius: radius.sm,
+		paddingVertical: 10,
+		alignItems: 'center',
+	},
+	waterBtnPrimary: {
+		backgroundColor: colors.navy,
+		flex: 2,
+	},
+	waterBtnText: {
+		...typography.button,
+		color: colors.text,
+	},
+	waterBtnTextPrimary: {
+		color: colors.surface,
 	},
 	medMeta: {
 		...typography.meta,

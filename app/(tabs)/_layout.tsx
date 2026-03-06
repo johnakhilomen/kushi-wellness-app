@@ -7,8 +7,14 @@ export default function TabLayout() {
 	const pathname = usePathname();
 	const router = useRouter();
 
-	const getActiveTab = (): 'home' | 'fast' | 'ritual' | 'profile' => {
+	const getActiveTab = ():
+		| 'home'
+		| 'fast'
+		| 'cabinet'
+		| 'ritual'
+		| 'profile' => {
 		if (pathname.includes('/fast')) return 'fast';
+		if (pathname.includes('/cabinet')) return 'cabinet';
 		if (pathname.includes('/rituals')) return 'ritual';
 		if (pathname.includes('/profile')) return 'profile';
 		return 'home';
@@ -25,6 +31,7 @@ export default function TabLayout() {
 							const routes: Record<string, string> = {
 								home: '/(tabs)',
 								fast: '/(tabs)/fast',
+								cabinet: '/(tabs)/cabinet',
 								ritual: '/(tabs)/rituals',
 								profile: '/(tabs)/profile',
 							};
@@ -41,6 +48,10 @@ export default function TabLayout() {
 			<Tabs.Screen
 				name="fast"
 				options={{ title: 'Fast' }}
+			/>
+			<Tabs.Screen
+				name="cabinet"
+				options={{ title: 'Cabinet' }}
 			/>
 			<Tabs.Screen
 				name="rituals"

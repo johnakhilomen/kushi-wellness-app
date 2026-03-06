@@ -103,7 +103,11 @@ export default function ProfileScreen() {
 					<Text style={styles.sectionTitle}>Your Preferences</Text>
 					<View style={styles.prefRow}>
 						<Text style={styles.prefLabel}>Fasting style</Text>
-						<Text style={styles.prefValue}>{profile.fastingStyle}</Text>
+						<Text style={styles.prefValue}>
+							{profile.fastingStyle === '23:1'
+								? 'OMAD'
+								: profile.fastingStyle}
+						</Text>
 					</View>
 					<View style={styles.prefDivider} />
 					<View style={styles.prefRow}>
@@ -142,12 +146,21 @@ export default function ProfileScreen() {
 					</View>
 				</Card>
 
-				{/* Retake Onboarding */}
+				{/* Journal */}
 				<Button
-					title="Retake Onboarding"
+					title="📓  Open Journal"
 					variant="secondary"
-					onPress={handleRetake}
+					onPress={() => router.push('/journal')}
 				/>
+
+				{/* Retake Onboarding */}
+				<View style={{ marginTop: 12 }}>
+					<Button
+						title="Retake Onboarding"
+						variant="secondary"
+						onPress={handleRetake}
+					/>
+				</View>
 
 				{/* Logout */}
 				<View style={{ marginTop: 12 }}>

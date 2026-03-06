@@ -42,7 +42,8 @@ function useProtectedRoute() {
 			if (
 				!inAuthGroup &&
 				!onOnboarding &&
-				segments[0] !== 'retake-onboarding'
+				segments[0] !== 'retake-onboarding' &&
+				segments[0] !== 'journal'
 			) {
 				router.replace('/(tabs)');
 			}
@@ -96,6 +97,7 @@ export default function RootLayout() {
 				<Stack.Screen name="onboarding" />
 				<Stack.Screen name="(tabs)" />
 				<Stack.Screen name="retake-onboarding" />
+				<Stack.Screen name="journal" />
 			</Stack>
 		</>
 	);

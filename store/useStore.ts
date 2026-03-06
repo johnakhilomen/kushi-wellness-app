@@ -10,11 +10,17 @@ import {
 	generateDailyRituals,
 	generateGutHarmonyExplanation,
 	computeGutHarmony,
+	generateCabinetList,
 } from '../lib/openai';
-import type { MealItem, RitualItem, EveningPractice } from '../lib/openai';
+import type {
+	MealItem,
+	RitualItem,
+	EveningPractice,
+	GroceryCategory,
+} from '../lib/openai';
 
 // ---------- Types ----------
-export type FastingStyle = '14:10' | '16:8' | '12:12';
+export type FastingStyle = '12:12' | '14:10' | '16:8' | '18:6' | '20:4' | '23:1';
 export type PrimaryIntention = 'digestion' | 'weight' | 'energy';
 export type { DietPhilosophy } from '../constants/diets';
 import type { DietPhilosophy } from '../constants/diets';
@@ -52,6 +58,22 @@ interface AIState {
 	postFastInsight: string | null;
 	insightLoading: boolean;
 	gutHarmonyLoading: boolean;
+	cabinet: GroceryCategory[];
+	cabinetLoading: boolean;
+}
+
+interface HydrationState {
+	glasses: number;
+	goal: number;
+	lastResetDate: string;
+}
+
+export interface JournalEntry {
+	id: string;
+	date: string;
+	mood: 'great' | 'good' | 'okay' | 'low';
+	note: string;
+	createdAt: number;
 }
 
 interface AppState {
@@ -70,6 +92,12 @@ interface AppState {
 
 	// AI
 	ai: AIState;
+
+	// Hydration
+	hydration: HydrationState;
+
+	// Journal
+	journal: JournalEntry[];
 
 	// Auth actions
 	initialize: () => Promise<void>;
@@ -102,6 +130,16 @@ interface AppState {
 	completeRitual: (index: number) => Promise<void>;
 	refreshGutHarmony: () => Promise<void>;
 	clearPostFastInsight: () => void;
+	fetchCabinet: () => Promise<void>;
+
+	// Hydration actions
+	addGlass: () => Promise<void>;
+	removeGlass: () => Promise<void>;
+	resetHydrationIfNewDay: () => void;
+
+	// Journal actions
+	addJournalEntry: (mood: JournalEntry['mood'], note: string) => Promise<void>;
+	fetchJournal: () => Promise<void>;
 }
 
 const defaultProfile: UserProfile = {
@@ -137,6 +175,14 @@ const defaultAI: AIState = {
 	postFastInsight: null,
 	insightLoading: false,
 	gutHarmonyLoading: false,
+	cabinet: [],
+	cabinetLoading: false,
+};
+
+const defaultHydration: HydrationState = {
+	glasses: 0,
+	goal: 8,
+	lastResetDate: new Date().toISOString().split('T')[0],
 };
 
 export const useStore = create<AppState>((set, get) => ({
@@ -147,6 +193,8 @@ export const useStore = create<AppState>((set, get) => ({
 	pendingEmail: null,
 	profile: defaultProfile,
 	fasting: defaultFasting,
+	hydration: defaultHydration,
+	journal: [],
 	ai: defaultAI,
 
 	// ─── Initialize: restore session + listen for auth changes ───
@@ -717,8 +765,157 @@ export const useStore = create<AppState>((set, get) => ({
 		}
 	},
 
+	// ─── Fetch Cabinet (Grocery List) ───
+	fetchCabinet: async () => {
+		const userId = get().user?.id;
+		if (!userId) return;
+
+		set({ ai: { ...get().ai, cabinetLoading: true } });
+
+		try {
+			const today = new Date().toISOString().split('T')[0];
+
+			// Check if we already have this week's cabinet
+			const { data: existing } = await supabase
+				.from('cabinet_lists')
+				.select('categories')
+				.eq('user_id', userId)
+				.eq('list_date', today)
+				.single();
+
+			if (existing?.categories) {
+				set({
+					ai: {
+						...get().ai,
+						cabinet: existing.categories as GroceryCategory[],
+						cabinetLoading: false,
+					},
+				});
+				return;
+			}
+
+			// Generate new list via LLM
+			const categories = await generateCabinetList(get().profile);
+
+			// Save to DB
+			await supabase
+				.from('cabinet_lists')
+				.upsert(
+					{ user_id: userId, list_date: today, categories },
+					{ onConflict: 'user_id,list_date' },
+				);
+
+			set({ ai: { ...get().ai, cabinet: categories, cabinetLoading: false } });
+		} catch {
+			set({ ai: { ...get().ai, cabinetLoading: false } });
+		}
+	},
+
 	// ─── Clear Post-Fast Insight ───
 	clearPostFastInsight: () => {
 		set({ ai: { ...get().ai, postFastInsight: null } });
+	},
+
+	// ═══════════════════════════════════════════
+	// Hydration
+	// ═══════════════════════════════════════════
+
+	resetHydrationIfNewDay: () => {
+		const today = new Date().toISOString().split('T')[0];
+		if (get().hydration.lastResetDate !== today) {
+			set({ hydration: { ...get().hydration, glasses: 0, lastResetDate: today } });
+		}
+	},
+
+	addGlass: async () => {
+		const { hydration, user } = get();
+		const newCount = Math.min(hydration.glasses + 1, hydration.goal);
+		set({ hydration: { ...hydration, glasses: newCount } });
+
+		if (user?.id) {
+			const today = new Date().toISOString().split('T')[0];
+			await supabase
+				.from('hydration_logs')
+				.upsert(
+					{ user_id: user.id, log_date: today, glasses: newCount },
+					{ onConflict: 'user_id,log_date' },
+				);
+		}
+	},
+
+	removeGlass: async () => {
+		const { hydration, user } = get();
+		const newCount = Math.max(hydration.glasses - 1, 0);
+		set({ hydration: { ...hydration, glasses: newCount } });
+
+		if (user?.id) {
+			const today = new Date().toISOString().split('T')[0];
+			await supabase
+				.from('hydration_logs')
+				.upsert(
+					{ user_id: user.id, log_date: today, glasses: newCount },
+					{ onConflict: 'user_id,log_date' },
+				);
+		}
+	},
+
+	// ═══════════════════════════════════════════
+	// Journal
+	// ═══════════════════════════════════════════
+
+	fetchJournal: async () => {
+		const userId = get().user?.id;
+		if (!userId) return;
+
+		const { data } = await supabase
+			.from('journal_entries')
+			.select('*')
+			.eq('user_id', userId)
+			.order('created_at', { ascending: false })
+			.limit(30);
+
+		if (data) {
+			set({
+				journal: data.map((d) => ({
+					id: d.id,
+					date: d.entry_date,
+					mood: d.mood,
+					note: d.note,
+					createdAt: new Date(d.created_at).getTime(),
+				})),
+			});
+		}
+	},
+
+	addJournalEntry: async (mood, note) => {
+		const userId = get().user?.id;
+		if (!userId) return;
+
+		const today = new Date().toISOString().split('T')[0];
+		const { data, error } = await supabase
+			.from('journal_entries')
+			.upsert(
+				{
+					user_id: userId,
+					entry_date: today,
+					mood,
+					note,
+				},
+				{ onConflict: 'user_id,entry_date' },
+			)
+			.select()
+			.single();
+
+		if (!error && data) {
+			const entry: JournalEntry = {
+				id: data.id,
+				date: data.entry_date,
+				mood: data.mood,
+				note: data.note,
+				createdAt: new Date(data.created_at).getTime(),
+			};
+			const journal = get().journal.filter((j) => j.date !== today);
+			set({ journal: [entry, ...journal] });
+		}
 	},
 }));
