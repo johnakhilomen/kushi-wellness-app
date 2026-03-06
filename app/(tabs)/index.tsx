@@ -8,6 +8,7 @@ import {
 	ActivityIndicator,
 	Pressable,
 } from 'react-native';
+import { useRouter } from 'expo-router';
 import { colors, typography, spacing, radius } from '../../constants/theme';
 import { Card } from '../../components/ui/Card';
 import { StreakBadge } from '../../components/ui/StreakBadge';
@@ -36,6 +37,7 @@ const mealTypeColors: Record<string, string> = {
 };
 
 export default function HomeScreen() {
+	const router = useRouter();
 	const profile = useStore((s) => s.profile);
 	const fasting = useStore((s) => s.fasting);
 	const ai = useStore((s) => s.ai);
@@ -251,12 +253,18 @@ export default function HomeScreen() {
 					<Text style={styles.sectionTitleLight}>Mindful Practice</Text>
 					<Text style={styles.medMeta}>Today's recommended session</Text>
 					<View style={styles.medButtonsRow}>
-						<View style={styles.medButton}>
+						<Pressable
+							style={styles.medButton}
+							onPress={() => router.push('/breathwork')}
+						>
 							<Text style={styles.medButtonText}>4-7-8 Breathwork</Text>
-						</View>
-						<View style={styles.medButton}>
+						</Pressable>
+						<Pressable
+							style={styles.medButton}
+							onPress={() => router.push('/body-scan')}
+						>
 							<Text style={styles.medButtonText}>Body Scan</Text>
-						</View>
+						</Pressable>
 					</View>
 				</Card>
 

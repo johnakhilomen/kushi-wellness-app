@@ -6,8 +6,10 @@ import {
 	SafeAreaView,
 	ScrollView,
 	TouchableOpacity,
+	Pressable,
 	ActivityIndicator,
 } from 'react-native';
+import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { colors, typography, spacing, radius } from '../../constants/theme';
 import { Card } from '../../components/ui/Card';
@@ -15,6 +17,7 @@ import { Tooltip } from '../../components/ui/Tooltip';
 import { useStore } from '../../store/useStore';
 
 export default function RitualsScreen() {
+	const router = useRouter();
 	const profile = useStore((s) => s.profile);
 	const ai = useStore((s) => s.ai);
 	const fetchDailyRituals = useStore((s) => s.fetchDailyRituals);
@@ -180,13 +183,16 @@ export default function RitualsScreen() {
 							? ai.eveningPractice.description
 							: 'Wind down with gentle belly breathing'}
 					</Text>
-					<View style={styles.eveningButton}>
+					<Pressable
+						style={styles.eveningButton}
+						onPress={() => router.push('/breathwork?mode=awareness')}
+					>
 						<Text style={styles.eveningButtonText}>
 							{ai.eveningPractice
 								? `${ai.eveningPractice.duration} ${ai.eveningPractice.name}`
-								: '7-min belly breathing'}
+								: '7-min breath awareness'}
 						</Text>
-					</View>
+					</Pressable>
 				</LinearGradient>
 
 				{/* Bottom spacer for tab bar */}

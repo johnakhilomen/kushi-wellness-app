@@ -168,7 +168,7 @@ export default function BodyScanScreen() {
 						</Text>
 					)}
 
-					<View style={{ marginTop: 16 }}>
+					<View style={{ marginTop: 16, width: '100%' }}>
 						<Button
 							title={
 								saving
