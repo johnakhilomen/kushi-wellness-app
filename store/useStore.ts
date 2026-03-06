@@ -18,6 +18,7 @@ import type {
 	EveningPractice,
 	GroceryCategory,
 } from '../lib/openai';
+import type { BodyZone, ZoneFeeling } from '../components/ui/BodySilhouette';
 
 // ---------- Types ----------
 export type FastingStyle = '12:12' | '14:10' | '16:8' | '18:6' | '20:4' | '23:1';
@@ -76,6 +77,13 @@ export interface JournalEntry {
 	createdAt: number;
 }
 
+export interface BodyScanEntry {
+	id: string;
+	date: string;
+	zones: Partial<Record<BodyZone, ZoneFeeling>>;
+	createdAt: number;
+}
+
 interface AppState {
 	// Auth
 	session: Session | null;
@@ -98,6 +106,10 @@ interface AppState {
 
 	// Journal
 	journal: JournalEntry[];
+
+	// Body Scan
+	bodyScan: BodyScanEntry | null;
+	bodyScanHistory: BodyScanEntry[];
 
 	// Auth actions
 	initialize: () => Promise<void>;
@@ -140,6 +152,11 @@ interface AppState {
 	// Journal actions
 	addJournalEntry: (mood: JournalEntry['mood'], note: string) => Promise<void>;
 	fetchJournal: () => Promise<void>;
+
+	// Body Scan actions
+	saveBodyScan: (zones: Partial<Record<BodyZone, ZoneFeeling>>) => Promise<void>;
+	fetchBodyScan: () => Promise<void>;
+	fetchBodyScanHistory: () => Promise<void>;
 }
 
 const defaultProfile: UserProfile = {
@@ -195,6 +212,8 @@ export const useStore = create<AppState>((set, get) => ({
 	fasting: defaultFasting,
 	hydration: defaultHydration,
 	journal: [],
+	bodyScan: null,
+	bodyScanHistory: [],
 	ai: defaultAI,
 
 	// ─── Initialize: restore session + listen for auth changes ───
@@ -916,6 +935,83 @@ export const useStore = create<AppState>((set, get) => ({
 			};
 			const journal = get().journal.filter((j) => j.date !== today);
 			set({ journal: [entry, ...journal] });
+		}
+	},
+
+	// ═══════════════════════════════════════════
+	// Body Scan
+	// ═══════════════════════════════════════════
+
+	fetchBodyScan: async () => {
+		const userId = get().user?.id;
+		if (!userId) return;
+
+		const today = new Date().toISOString().split('T')[0];
+		const { data } = await supabase
+			.from('body_scans')
+			.select('*')
+			.eq('user_id', userId)
+			.eq('scan_date', today)
+			.single();
+
+		if (data) {
+			set({
+				bodyScan: {
+					id: data.id,
+					date: data.scan_date,
+					zones: data.zones as Partial<Record<BodyZone, ZoneFeeling>>,
+					createdAt: new Date(data.created_at).getTime(),
+				},
+			});
+		}
+	},
+
+	saveBodyScan: async (zones) => {
+		const userId = get().user?.id;
+		if (!userId) return;
+
+		const today = new Date().toISOString().split('T')[0];
+		const { data, error } = await supabase
+			.from('body_scans')
+			.upsert(
+				{ user_id: userId, scan_date: today, zones },
+				{ onConflict: 'user_id,scan_date' },
+			)
+			.select()
+			.single();
+
+		if (!error && data) {
+			set({
+				bodyScan: {
+					id: data.id,
+					date: data.scan_date,
+					zones: data.zones as Partial<Record<BodyZone, ZoneFeeling>>,
+					createdAt: new Date(data.created_at).getTime(),
+				},
+			});
+		}
+	},
+
+	fetchBodyScanHistory: async () => {
+		const userId = get().user?.id;
+		if (!userId) return;
+
+		const { data } = await supabase
+			.from('body_scans')
+			.select('*')
+			.eq('user_id', userId)
+			.order('scan_date', { ascending: false })
+			.limit(14);
+
+		if (data) {
+			set({
+				bodyScanHistory: data.map((d) => ({
+					id: d.id,
+					date: d.scan_date,
+					zones: d.zones as Partial<Record<BodyZone, ZoneFeeling>>,
+					createdAt: new Date(d.created_at).getTime(),
+				})),
+			});
 		}
 	},
 }));

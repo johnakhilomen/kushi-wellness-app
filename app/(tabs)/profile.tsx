@@ -153,6 +153,15 @@ export default function ProfileScreen() {
 					onPress={() => router.push('/journal')}
 				/>
 
+				{/* Body Scan */}
+				<View style={{ marginTop: 12 }}>
+					<Button
+						title="🧘  Body Scan"
+						variant="secondary"
+						onPress={() => router.push('/body-scan')}
+					/>
+				</View>
+
 				{/* Retake Onboarding */}
 				<View style={{ marginTop: 12 }}>
 					<Button
