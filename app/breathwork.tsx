@@ -4,6 +4,7 @@ import {
 	Text,
 	StyleSheet,
 	SafeAreaView,
+	ScrollView,
 	Pressable,
 	Animated,
 	Easing,
@@ -184,81 +185,86 @@ export default function BreathworkScreen() {
 
 	return (
 		<SafeAreaView style={styles.container}>
-			{/* Header */}
-			<View style={styles.header}>
-				<Pressable onPress={() => { stopSession(); router.back(); }}>
-					<Text style={styles.backBtn}>← Back</Text>
-				</Pressable>
-			</View>
+			<ScrollView
+				contentContainerStyle={styles.scrollContent}
+				showsVerticalScrollIndicator={false}
+			>
+				{/* Header */}
+				<View style={styles.header}>
+					<Pressable onPress={() => { stopSession(); router.back(); }}>
+						<Text style={styles.backBtn}>← Back</Text>
+					</Pressable>
+				</View>
 
-			<Text style={styles.title}>{config.title}</Text>
-			<Text style={styles.subtitle}>{config.subtitle}</Text>
+				<Text style={styles.title}>{config.title}</Text>
+				<Text style={styles.subtitle}>{config.subtitle}</Text>
 
-			{/* Breathing Circle */}
-			<View style={styles.circleContainer}>
-				<Animated.View
-					style={[
-						styles.outerCircle,
-						{
-							transform: [{ scale: scaleAnim }],
-							opacity: opacityAnim,
-							backgroundColor: PHASE_COLORS[phase],
-						},
-					]}
-				/>
-				<View style={styles.innerCircle}>
-					{phase === 'idle' ? (
-						<Text style={styles.circleLabel}>Tap to start</Text>
-					) : phase === 'done' ? (
-						<>
-							<Text style={styles.circleCountdown}>✓</Text>
-							<Text style={styles.circleLabel}>Well done</Text>
-						</>
-					) : (
-						<>
-							<Text style={styles.circleCountdown}>{countdown}</Text>
-							<Text style={styles.circleLabel}>{PHASE_LABELS[phase]}</Text>
-						</>
+				{/* Breathing Circle */}
+				<View style={styles.circleContainer}>
+					<Animated.View
+						style={[
+							styles.outerCircle,
+							{
+								transform: [{ scale: scaleAnim }],
+								opacity: opacityAnim,
+								backgroundColor: PHASE_COLORS[phase],
+							},
+						]}
+					/>
+					<View style={styles.innerCircle}>
+						{phase === 'idle' ? (
+							<Text style={styles.circleLabel}>Tap to start</Text>
+						) : phase === 'done' ? (
+							<>
+								<Text style={styles.circleCountdown}>✓</Text>
+								<Text style={styles.circleLabel}>Well done</Text>
+							</>
+						) : (
+							<>
+								<Text style={styles.circleCountdown}>{countdown}</Text>
+								<Text style={styles.circleLabel}>{PHASE_LABELS[phase]}</Text>
+							</>
+						)}
+					</View>
+				</View>
+
+				{/* Progress */}
+				<Text style={styles.progress}>
+					{phase === 'idle'
+						? `${config.cycles} cycles · ${formatTime(totalTime)}`
+						: phase === 'done'
+							? `${config.cycles} cycles complete`
+							: `Cycle ${currentCycle + 1} of ${config.cycles}`}
+				</Text>
+
+				{/* Action Button */}
+				<View style={styles.actionRow}>
+					{phase === 'idle' && (
+						<Pressable style={styles.startBtn} onPress={startSession}>
+							<Text style={styles.startBtnText}>Begin</Text>
+						</Pressable>
+					)}
+					{isRunning && (
+						<Pressable style={styles.stopBtn} onPress={stopSession}>
+							<Text style={styles.stopBtnText}>Stop</Text>
+						</Pressable>
+					)}
+					{phase === 'done' && (
+						<Pressable style={styles.startBtn} onPress={() => { stopSession(); startSession(); }}>
+							<Text style={styles.startBtnText}>Again</Text>
+						</Pressable>
 					)}
 				</View>
-			</View>
 
-			{/* Progress */}
-			<Text style={styles.progress}>
-				{phase === 'idle'
-					? `${config.cycles} cycles · ${formatTime(totalTime)}`
-					: phase === 'done'
-						? `${config.cycles} cycles complete`
-						: `Cycle ${currentCycle + 1} of ${config.cycles}`}
-			</Text>
-
-			{/* Action Button */}
-			<View style={styles.actionRow}>
+				{/* Tip */}
 				{phase === 'idle' && (
-					<Pressable style={styles.startBtn} onPress={startSession}>
-						<Text style={styles.startBtnText}>Begin</Text>
-					</Pressable>
+					<Text style={styles.tip}>
+						{mode === '478'
+							? 'Place the tip of your tongue behind your upper front teeth. Breathe in through your nose and out through your mouth.'
+							: 'Find a comfortable position. Close your eyes and simply observe your natural breath without trying to change it.'}
+					</Text>
 				)}
-				{isRunning && (
-					<Pressable style={styles.stopBtn} onPress={stopSession}>
-						<Text style={styles.stopBtnText}>Stop</Text>
-					</Pressable>
-				)}
-				{phase === 'done' && (
-					<Pressable style={styles.startBtn} onPress={() => { stopSession(); startSession(); }}>
-						<Text style={styles.startBtnText}>Again</Text>
-					</Pressable>
-				)}
-			</View>
-
-			{/* Tip */}
-			{phase === 'idle' && (
-				<Text style={styles.tip}>
-					{mode === '478'
-						? 'Place the tip of your tongue behind your upper front teeth. Breathe in through your nose and out through your mouth.'
-						: 'Find a comfortable position. Close your eyes and simply observe your natural breath without trying to change it.'}
-				</Text>
-			)}
+			</ScrollView>
 		</SafeAreaView>
 	);
 }
@@ -267,11 +273,13 @@ const styles = StyleSheet.create({
 	container: {
 		flex: 1,
 		backgroundColor: '#F7F4EE',
+	},
+	scrollContent: {
 		paddingHorizontal: spacing.screen,
+		paddingTop: 14,
 	},
 	header: {
-		marginTop: 14,
-		marginBottom: 8,
+		marginBottom: 12,
 	},
 	backBtn: {
 		...typography.body,

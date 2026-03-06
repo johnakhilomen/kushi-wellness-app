@@ -14,6 +14,7 @@ function useProtectedRoute() {
 
 	useEffect(() => {
 		if (isLoading) return;
+		if (segments.length === 0) return;
 
 		const inAuthGroup = segments[0] === '(tabs)';
 		const onOnboarding = segments[0] === 'onboarding';
